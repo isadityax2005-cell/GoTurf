@@ -11,7 +11,7 @@ export function generateStaticParams() {
   return DEMO_TURFS.map((t) => ({ slug: t.slug }));
 }
 
-export default async function CheckoutPage({ params }: CheckoutPageProps) {
+async function CheckoutContent({ params }: CheckoutPageProps) {
   const { slug } = await params;
   const turf = getTurfBySlug(slug);
 
@@ -19,6 +19,10 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     notFound();
   }
 
+  return <CheckoutClient turf={turf} />;
+}
+
+export default function CheckoutPage({ params }: CheckoutPageProps) {
   return (
     <Suspense
       fallback={
@@ -27,7 +31,8 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
         </div>
       }
     >
-      <CheckoutClient turf={turf} />
+      <CheckoutContent params={params} />
     </Suspense>
   );
 }
+

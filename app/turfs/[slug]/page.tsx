@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
@@ -19,7 +20,7 @@ const sportIcons: Record<string, string> = {
   pickleball: '🏓',
 };
 
-export default async function TurfDetailPage({ params }: TurfDetailPageProps) {
+async function TurfDetailContent({ params }: TurfDetailPageProps) {
   const { slug } = await params;
   const turf = getTurfBySlug(slug);
 
@@ -159,3 +160,18 @@ export default async function TurfDetailPage({ params }: TurfDetailPageProps) {
     </main>
   );
 }
+
+export default function TurfDetailPage({ params }: TurfDetailPageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-neutral-950 text-neutral-400 flex items-center justify-center text-xs">
+          Loading venue details...
+        </div>
+      }
+    >
+      <TurfDetailContent params={params} />
+    </Suspense>
+  );
+}
+

@@ -11,7 +11,7 @@ export function generateStaticParams() {
   return DEMO_TURFS.map((t) => ({ slug: t.slug }));
 }
 
-export default async function BookTurfPage({ params }: BookPageProps) {
+async function BookTurfContent({ params }: BookPageProps) {
   const { slug } = await params;
   const turf = getTurfBySlug(slug);
 
@@ -19,6 +19,10 @@ export default async function BookTurfPage({ params }: BookPageProps) {
     notFound();
   }
 
+  return <BookTurfClient turf={turf} />;
+}
+
+export default function BookTurfPage({ params }: BookPageProps) {
   return (
     <Suspense
       fallback={
@@ -27,7 +31,8 @@ export default async function BookTurfPage({ params }: BookPageProps) {
         </div>
       }
     >
-      <BookTurfClient turf={turf} />
+      <BookTurfContent params={params} />
     </Suspense>
   );
 }
+
