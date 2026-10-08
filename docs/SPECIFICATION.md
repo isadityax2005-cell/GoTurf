@@ -65,3 +65,33 @@
 - **Phase 7: Notifications & Admin Suite** — Transactional emails, booking search, dispute logging, emergency hide, mobile responsive polish.
 - **Phase 8: Acceptance Testing** — Comprehensive test suite validating all 12 acceptance criteria.
 - **Phase 9: Production & Pilot** — Production domain, live payment mode, onboarding 1–3 pilot turfs in Mumbai, 4-week pilot scorecard.
+
+---
+
+## 5. Roadmap: Events & Whole Turf Bookings (Post-MVP)
+
+### Overview
+A dedicated inquiry and quotation workflow for non-standard, large-scale bookings, kept strictly separate from the core hourly slot booking engine.
+
+### Target Event Types
+1. **Private Parties & Celebrations**: Birthday tournaments, private weekend friend leagues, fan-club matches.
+2. **Corporate Sports Days & Team Outings**: Intra-office cricket/football cups, quarterly team-building sessions, wellness events.
+3. **Real-Estate & Commercial Brand Activations**: Community tournaments, housing society cups, sponsor-backed exhibition matches.
+
+### Custom Inquiry Requirements (Data to Collect)
+- **Venue & Court**: Target turf(s), whole-venue buyout vs specific multiple courts.
+- **Time Windows**: Extended blocks (e.g., 3–8 hours, half-day, or full-day takeovers).
+- **Headcount**: Estimated attendee count (players + spectators/guests).
+- **Budget Range**: Indicative budget in ₹ for facility and services.
+- **Event Add-ons**:
+  - Official referees / box cricket umpires.
+  - Sound system / PA / microphone.
+  - Professional match equipment (match-grade footballs, wickets, tennis balls, pickleball paddles/nets).
+  - Hydration & catering setups.
+  - Photography / drone videography.
+
+### Architectural Separation
+- **No Direct Slot Lock**: Large-scale event requests do NOT enter the automated 10-minute hold or public slot grid.
+- **Inquiry & Bespoke Quote**: Handled as an asynchronous inquiry funnel. Owners receive the lead, review headcount and add-on needs, and submit a quote or confirm availability offline.
+- **Manual Turf Blocking**: Once confirmed, the turf owner uses the dashboard's offline blocking tool to block out the entire required window with reason `"Corporate Event"` or `"Private Party"`.
+

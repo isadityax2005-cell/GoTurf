@@ -32,7 +32,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 sm:gap-4 text-sm">
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900/90 border border-neutral-800 text-xs text-neutral-400 select-none"
+            title="Private parties, corporate sports days & whole-venue bookings"
+          >
+            <span className="text-[11px]">🎉</span>
+            <span>Events coming soon</span>
+          </span>
           <span className="hidden sm:inline-block text-neutral-400">Phase 0 Baseline</span>
           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>
@@ -65,6 +72,20 @@ export default function HomePage() {
               <p className="text-xs text-neutral-400 mt-1">{sport.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* Whole Turf & Corporate Events Placeholder */}
+        <div className="mt-6 w-full max-w-4xl p-4 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <p className="text-sm font-semibold text-white">Whole Turf & Corporate Tournaments</p>
+              <p className="text-xs text-neutral-400">Hosting birthday matches, company leagues, or commercial cups?</p>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl whitespace-nowrap">
+            Events coming soon
+          </span>
         </div>
 
         {/* Localities in Mumbai */}
