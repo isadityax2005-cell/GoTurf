@@ -58,9 +58,12 @@ export default function OwnerDashboardPage() {
             >
               + Register New Turf
             </Link>
-            <button className="px-4 py-2 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20">
+            <Link
+              href="/owner/availability"
+              className="px-4 py-2 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
+            >
               + Block Offline Time
-            </button>
+            </Link>
           </div>
         </div>
 

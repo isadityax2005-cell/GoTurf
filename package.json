@@ -9,7 +9,8 @@
     "lint": "eslint",
     "verify:phase1": "tsx scripts/verify-schema.ts",
     "verify:phase2": "tsx scripts/verify-phase2-rbac.ts",
-    "verify:phase3": "tsx scripts/verify-phase3-listings.ts"
+    "verify:phase3": "tsx scripts/verify-phase3-listings.ts",
+    "verify:phase4": "tsx scripts/verify-phase4-slots.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
