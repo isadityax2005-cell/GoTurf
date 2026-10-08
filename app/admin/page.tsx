@@ -1,23 +1,54 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 
+interface PendingTurf {
+  id: string;
+  name: string;
+  owner: string;
+  phone: string;
+  locality: string;
+  sports: string;
+  submittedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export default function AdminDashboardPage() {
-  const pendingTurfs = [
+  const [pendingList, setPendingList] = useState<PendingTurf[]>([
     {
       id: 'pending-1',
       name: 'Juhu Beach Sports Arena',
       owner: 'Sameer Kulkarni',
       phone: '+91 98200 99887',
       locality: 'Juhu, Mumbai',
+      sports: 'Box Cricket & Pickleball',
       submittedAt: 'Today, 2:15 PM',
       status: 'pending',
     },
-  ];
+  ]);
 
-  const approvedTurfs = [
+  const [approvedTurfs, setApprovedTurfs] = useState([
     { name: 'Bandra Turf Arena [Demo]', locality: 'Bandra West', courts: 2, status: 'approved' },
     { name: 'Powai Smash Club [Demo]', locality: 'Powai', courts: 2, status: 'approved' },
     { name: 'Andheri Sports Hub [Demo]', locality: 'Andheri East', courts: 2, status: 'approved' },
-  ];
+  ]);
+
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const handleApprove = (turf: PendingTurf) => {
+    setPendingList((prev) => prev.filter((p) => p.id !== turf.id));
+    setApprovedTurfs((prev) => [
+      ...prev,
+      { name: turf.name, locality: turf.locality, courts: 2, status: 'approved' },
+    ]);
+    setNotification(`✅ Successfully approved "${turf.name}"! It is now live and visible to players.`);
+  };
+
+  const handleReject = (turf: PendingTurf) => {
+    setPendingList((prev) => prev.filter((p) => p.id !== turf.id));
+    setNotification(`⚠️ Rejected "${turf.name}". Marked as unlisted.`);
+  };
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-rose-500 selection:text-white">
@@ -57,49 +88,81 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
+        {notification && (
+          <div className="mb-6 p-4 rounded-2xl bg-neutral-900 border border-neutral-700 text-xs text-neutral-200 flex justify-between items-center shadow-lg">
+            <span>{notification}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-neutral-400 hover:text-white text-xs ml-4"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
         {/* Verification Queue Section */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <span>Verification Queue</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                1 Pending
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+                {pendingList.length} Pending
               </span>
             </h2>
           </div>
 
-          <div className="space-y-3">
-            {pendingTurfs.map((turf) => (
-              <div
-                key={turf.id}
-                className="p-5 rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div>
-                  <h3 className="font-semibold text-white text-sm">{turf.name}</h3>
-                  <p className="text-xs text-neutral-400 mt-0.5">
-                    Owner: {turf.owner} &bull; {turf.phone} &bull; {turf.locality}
-                  </p>
-                  <p className="text-[11px] text-neutral-500 mt-1">Submitted: {turf.submittedAt}</p>
+          {pendingList.length > 0 ? (
+            <div className="space-y-3">
+              {pendingList.map((turf) => (
+                <div
+                  key={turf.id}
+                  className="p-5 rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div>
+                    <h3 className="font-semibold text-white text-sm">{turf.name}</h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Owner: {turf.owner} &bull; {turf.phone} &bull; 📍 {turf.locality}
+                    </p>
+                    <p className="text-[11px] text-neutral-500 mt-1">
+                      Sports: {turf.sports} &bull; Submitted: {turf.submittedAt}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleReject(turf)}
+                      className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold transition-colors"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => handleApprove(turf)}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold shadow-md shadow-emerald-500/20 transition-colors"
+                    >
+                      Approve Listing &rarr;
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 font-medium">
-                    Inspect Evidence
-                  </button>
-                  <button className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold">
-                    Reject
-                  </button>
-                  <button className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold shadow-md shadow-emerald-500/20">
-                    Approve Venue
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-2xl bg-neutral-900/20 border border-neutral-800 text-center text-xs text-neutral-500">
+              No pending venues awaiting verification. All submissions reviewed.
+            </div>
+          )}
         </div>
 
         {/* Live Turfs Quick Overview */}
         <div>
-          <h2 className="text-base font-bold text-white mb-4">Live Approved Turfs (Mumbai)</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-white">Live Approved Turfs (Mumbai)</h2>
+            <Link
+              href="/turfs"
+              className="text-xs text-emerald-400 hover:underline"
+            >
+              View Player Discovery Page &rarr;
+            </Link>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {approvedTurfs.map((t) => (
               <div key={t.name} className="p-4 rounded-2xl bg-neutral-900/30 border border-neutral-800/70">
@@ -109,8 +172,10 @@ export default function AdminDashboardPage() {
                 </div>
                 <p className="text-xs text-neutral-400 mt-1">{t.locality} &bull; {t.courts} Courts</p>
                 <div className="mt-4 pt-3 border-t border-neutral-800/60 flex justify-between items-center text-xs">
-                  <button className="text-neutral-400 hover:text-white">View Bookings</button>
-                  <button className="text-rose-400 hover:text-rose-300">Hide Turf</button>
+                  <Link href="/turfs" className="text-neutral-400 hover:text-white">
+                    Preview
+                  </Link>
+                  <span className="text-[11px] text-emerald-500 font-medium">Publicly Searchable</span>
                 </div>
               </div>
             ))}

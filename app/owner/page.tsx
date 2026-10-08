@@ -51,7 +51,13 @@ export default function OwnerDashboardPage() {
               📍 {ownerTurf.locality} &bull; Status: <span className="text-emerald-400 font-semibold uppercase">{ownerTurf.status}</span>
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/owner/new-turf"
+              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold transition-colors"
+            >
+              + Register New Turf
+            </Link>
             <button className="px-4 py-2 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20">
               + Block Offline Time
             </button>
