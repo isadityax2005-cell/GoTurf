@@ -24,6 +24,9 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     const list: { label: string; dateStr: string; subLabel: string }[] = [];
     const base = new Date();
 
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
     for (let i = 0; i < 7; i++) {
       const d = new Date(base);
       d.setDate(base.getDate() + i);
@@ -33,11 +36,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
       const day = String(d.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      let label = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+      const subLabel = dayNames[d.getDay()];
+      let label = `${subLabel}, ${d.getDate()} ${monthNames[d.getMonth()]}`;
       if (i === 0) label = 'Today';
       if (i === 1) label = 'Tomorrow';
-
-      const subLabel = d.toLocaleDateString('en-IN', { weekday: 'short' });
 
       list.push({ label, dateStr, subLabel });
     }
@@ -300,14 +302,14 @@ function SlotCard({
     >
       <div>
         <div className="flex justify-between items-start mb-1">
-          <span className="text-xs font-bold text-white tracking-tight">
+          <span suppressHydrationWarning className="text-xs font-bold text-white tracking-tight">
             {slot.startTimeIST}
           </span>
           {slot.isPeak && isAvailable && (
             <span className="text-[9px] text-amber-400 font-bold">⚡ Peak</span>
           )}
         </div>
-        <span className="text-[10px] text-neutral-400 block">{slot.endTimeIST}</span>
+        <span suppressHydrationWarning className="text-[10px] text-neutral-400 block">{slot.endTimeIST}</span>
       </div>
 
       <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">

@@ -29,12 +29,18 @@ export function formatPaise(paise: number): string {
 }
 
 export function formatTimeIST(date: Date): string {
-  return new Intl.DateTimeFormat('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(date);
+  // IST is strictly UTC + 5 hours 30 minutes
+  const istOffsetMs = (5 * 60 + 30) * 60 * 1000;
+  const istDate = new Date(date.getTime() + istOffsetMs);
+
+  const hours24 = istDate.getUTCHours();
+  const minutes = istDate.getUTCMinutes();
+
+  const hour12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  const ampm = hours24 >= 12 ? 'PM' : 'AM';
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  return `${pad(hour12)}:${pad(minutes)} ${ampm}`;
 }
 
 // Convert "YYYY-MM-DD" + "HH:MM" in IST to UTC Date object

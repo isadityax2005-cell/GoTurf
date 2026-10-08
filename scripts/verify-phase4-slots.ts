@@ -37,8 +37,8 @@ function runPhase4Tests() {
   // 06:00 to 23:00 with 60 min intervals = 17 slots
   console.assert(slots.length === 17, `Expected 17 slots, got ${slots.length}`);
   console.log(`  ✓ Generated exactly ${slots.length} consecutive 60-min slots for 06:00 to 23:00 schedule`);
-  console.assert(slots[0].startTimeIST.includes('6:00') && slots[0].startTimeIST.includes('am'), 'First slot mismatch');
-  console.assert(slots[16].startTimeIST.includes('10:00') && slots[16].startTimeIST.includes('pm'), 'Last slot mismatch');
+  console.assert(slots[0].startTimeIST.includes('6:00') && slots[0].startTimeIST.toUpperCase().includes('AM'), 'First slot mismatch');
+  console.assert(slots[16].startTimeIST.includes('10:00') && slots[16].startTimeIST.toUpperCase().includes('PM'), 'Last slot mismatch');
   console.log(`  ✓ First slot: ${slots[0].startTimeIST} | Last slot: ${slots[16].startTimeIST} - ${slots[16].endTimeIST}`);
 
   console.log('\n--- 2. Testing Dynamic Peak vs Off-Peak Pricing Rules ---');
@@ -67,12 +67,12 @@ function runPhase4Tests() {
   console.log('\n--- 3. Testing Real-Time Conflict Masking (Booked & Blocked Slots) ---');
 
   // Slot at 18:00 IST (12:30 UTC) should be booked by player
-  const bookedSlot = slots.find((s) => s.startTimeIST.includes('6:00') && s.startTimeIST.includes('pm'));
+  const bookedSlot = slots.find((s) => s.startTimeIST.includes('6:00') && s.startTimeIST.toUpperCase().includes('PM'));
   console.assert(bookedSlot?.status === 'booked', `Expected status 'booked', got ${bookedSlot?.status}`);
   console.log(`  ✓ Player confirmed booking at 06:00 PM IST is correctly marked status: 'booked'`);
 
   // Slot at 20:00 IST (14:30 UTC) should be blocked by owner
-  const blockedSlot = slots.find((s) => s.startTimeIST.includes('8:00') && s.startTimeIST.includes('pm'));
+  const blockedSlot = slots.find((s) => s.startTimeIST.includes('8:00') && s.startTimeIST.toUpperCase().includes('PM'));
   console.assert(blockedSlot?.status === 'blocked', `Expected status 'blocked', got ${blockedSlot?.status}`);
   console.assert(blockedSlot?.blockReason?.includes('coaching'), 'Block reason missing');
   console.log(`  ✓ Owner offline block at 08:00 PM IST is correctly marked status: 'blocked' ("${blockedSlot?.blockReason}")`);
@@ -80,7 +80,7 @@ function runPhase4Tests() {
   console.log('\n--- 4. Testing Owner 2-Tap Block Creation ---');
 
   // Owner blocks 16:00 to 17:00 IST (10:30 to 11:30 UTC)
-  const slotToBlock = slots.find((s) => s.startTimeIST.includes('4:00') && s.startTimeIST.includes('pm'))!;
+  const slotToBlock = slots.find((s) => s.startTimeIST.includes('4:00') && s.startTimeIST.toUpperCase().includes('PM'))!;
   console.assert(slotToBlock.status === 'available', 'Slot should initially be available');
 
   createOwnerBlock({
