@@ -130,12 +130,16 @@ export async function createTemporaryHold(params: CreateHoldParams): Promise<Cre
     const expiresAt = new Date(now.getTime() + holdMinutes * 60 * 1000).toISOString();
 
     const paymentMode = params.paymentMode || 'token_advance';
+    const durationMs = new Date(params.endAtUTC).getTime() - new Date(params.startAtUTC).getTime();
+    const durationHours = Math.max(1, Math.round(durationMs / (3600 * 1000)));
+
     let advancePaise = params.advanceAmountPaise;
     let balancePaise = 0;
 
     if (paymentMode === 'token_advance') {
-      // Default to ₹200 (20,000 paise) token advance or customized amount
-      advancePaise = advancePaise !== undefined ? advancePaise : 20000;
+      // Default to ₹200 (20,000 paise) per hour token advance or customized amount
+      const defaultAdvance = 20000 * durationHours;
+      advancePaise = advancePaise !== undefined ? advancePaise : defaultAdvance;
       balancePaise = Math.max(0, params.pricePaise - advancePaise);
     } else {
       advancePaise = params.pricePaise;

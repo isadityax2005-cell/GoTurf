@@ -224,6 +224,11 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
     ? `${formatTimeIST(new Date(holdBooking.start_at))} – ${formatTimeIST(new Date(holdBooking.end_at))}`
     : '06:00 PM – 07:00 PM';
 
+  const durationMins = holdBooking
+    ? Math.max(60, Math.round((new Date(holdBooking.end_at).getTime() - new Date(holdBooking.start_at).getTime()) / (60 * 1000)))
+    : 60;
+  const durationLabel = durationMins >= 120 ? '2 Hours' : durationMins >= 90 ? '90 Mins' : '60 Mins';
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
       {/* Top Header */}
@@ -516,7 +521,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800 space-y-3 text-xs">
                   <h2 className="text-base font-bold text-white mb-2">Price Breakdown</h2>
                   <div className="flex justify-between text-neutral-300">
-                    <span>Slot Value (60 Mins)</span>
+                    <span>Slot Value ({durationLabel})</span>
                     <span>₹{slotTotal.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="space-y-1">

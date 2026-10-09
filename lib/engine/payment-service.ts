@@ -77,11 +77,15 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
   // Allow player to toggle mode on checkout
   if (params.paymentMode) {
     booking.payment_mode = params.paymentMode;
+    const durationMs = new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime();
+    const durationHours = Math.max(1, Math.round(durationMs / (3600 * 1000)));
+    const defaultAdvance = 20000 * durationHours;
+
     if (params.paymentMode === 'full_online') {
       booking.advance_amount_paise = booking.price_paise;
       booking.balance_amount_paise = 0;
     } else {
-      booking.advance_amount_paise = booking.advance_amount_paise || 20000;
+      booking.advance_amount_paise = booking.advance_amount_paise || defaultAdvance;
       booking.balance_amount_paise = Math.max(0, booking.price_paise - booking.advance_amount_paise);
     }
   }
@@ -89,8 +93,12 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
   // Server authoritatively calculates amount based on payment_mode
   const courtPricePaise = booking.price_paise;
   const isAdvanceMode = booking.payment_mode === 'token_advance';
+  const durationMs = new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime();
+  const durationHours = Math.max(1, Math.round(durationMs / (3600 * 1000)));
+  const defaultAdvance = 20000 * durationHours;
+
   const advancePaise = isAdvanceMode
-    ? (booking.advance_amount_paise !== undefined ? booking.advance_amount_paise : 20000)
+    ? (booking.advance_amount_paise !== undefined ? booking.advance_amount_paise : defaultAdvance)
     : courtPricePaise;
   const balancePaise = isAdvanceMode
     ? Math.max(0, courtPricePaise - advancePaise)

@@ -199,3 +199,66 @@ export function generateCourtSlots({
 
   return slots;
 }
+
+// ----------------------------------------------------------------------------
+// Multi-Hour Windows Finder & Suggestion Engine
+// ----------------------------------------------------------------------------
+export interface MultiHourWindow {
+  courtId: string;
+  courtName?: string;
+  startAtUTC: string;
+  endAtUTC: string;
+  startTimeIST: string;
+  endTimeIST: string;
+  durationHours: number;
+  totalPricePaise: number;
+  priceFormatted: string;
+  isPeak: boolean;
+  slots: SlotGridItem[];
+}
+
+export function findAvailableMultiHourWindows(
+  slots: SlotGridItem[],
+  durationHours: number = 2
+): MultiHourWindow[] {
+  const windows: MultiHourWindow[] = [];
+  if (durationHours <= 1) {
+    return slots
+      .filter((s) => s.status === 'available')
+      .map((s) => ({
+        courtId: s.courtId,
+        startAtUTC: s.startAtUTC,
+        endAtUTC: s.endAtUTC,
+        startTimeIST: s.startTimeIST,
+        endTimeIST: s.endTimeIST,
+        durationHours: 1,
+        totalPricePaise: s.pricePaise,
+        priceFormatted: s.priceFormatted,
+        isPeak: s.isPeak,
+        slots: [s],
+      }));
+  }
+
+  for (let i = 0; i <= slots.length - durationHours; i++) {
+    const chunk = slots.slice(i, i + durationHours);
+    const allAvailable = chunk.every((s) => s.status === 'available');
+    if (allAvailable) {
+      const totalPricePaise = chunk.reduce((sum, s) => sum + s.pricePaise, 0);
+      const isPeak = chunk.some((s) => s.isPeak);
+      windows.push({
+        courtId: chunk[0].courtId,
+        startAtUTC: chunk[0].startAtUTC,
+        endAtUTC: chunk[chunk.length - 1].endAtUTC,
+        startTimeIST: chunk[0].startTimeIST,
+        endTimeIST: chunk[chunk.length - 1].endTimeIST,
+        durationHours,
+        totalPricePaise,
+        priceFormatted: formatPaise(totalPricePaise),
+        isPeak,
+        slots: chunk,
+      });
+    }
+  }
+
+  return windows;
+}
