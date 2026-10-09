@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import TurfCard from '@/components/turf-card';
 import { DEMO_TURFS } from '@/lib/data/turfs';
 import type { SportType } from '@/types/database';
+import MaggieNavbar from '@/components/maggie/Navbar';
+import MaggieFooter from '@/components/maggie/MaggieFooter';
 
 export default function TurfsDiscoveryPage() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'all'>('all');
@@ -46,45 +47,21 @@ export default function TurfsDiscoveryPage() {
   }, [selectedSport, selectedLocality]);
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Top Navbar */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-neutral-950/80">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-black text-sm">
-              GT
-            </div>
-            <span className="font-bold text-lg tracking-tight text-white">GoTurf</span>
-          </Link>
-          <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            Mumbai
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3 text-xs">
-          <Link
-            href="/owner"
-            className="hidden sm:inline-block text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg border border-neutral-800"
-          >
-            For Turf Owners
-          </Link>
-          <Link
-            href="/login"
-            className="px-3.5 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-neutral-200 transition-colors"
-          >
-            Sign In
-          </Link>
-        </div>
-      </header>
+      <MaggieNavbar />
 
       {/* Main Discovery Container */}
       <div className="max-w-6xl w-full mx-auto px-6 py-10 flex-1">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Find & Book Sports Turfs in <span className="text-emerald-400">Mumbai</span>
+          <div className="inline-flex items-center gap-2 bg-[#ffff94] text-[#03594d] px-3.5 py-1 rounded-full border-2 border-[#03594d] shadow-maggie-sm text-xs font-black uppercase tracking-wider mb-3 select-none">
+            <span>⚡ LIVE MUMBAI VENUES</span>
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-black text-[#03594d] tracking-tight uppercase leading-[1.05]">
+            Find & Book Sports Turfs in Mumbai
           </h1>
-          <p className="text-sm text-neutral-400 mt-2 max-w-xl">
+          <p className="text-sm font-bold text-[#03594d]/80 mt-2 max-w-xl">
             Live slot availability, verified venues, and instant online checkout for Cricket, Football, Tennis, and Pickleball.
           </p>
         </div>
@@ -92,19 +69,19 @@ export default function TurfsDiscoveryPage() {
         {/* Filter Controls Bar */}
         <div className="space-y-4 mb-10">
           {/* Sports Filter Tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
             {sportsList.map((sport) => (
               <button
                 key={sport.value}
                 onClick={() => setSelectedSport(sport.value)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                className={`px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 border-2 border-[#03594d] ${
                   selectedSport === sport.value
-                    ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 font-bold'
-                    : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white'
+                    ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm translate-x-0.5 translate-y-0.5'
+                    : 'bg-white text-[#03594d] shadow-maggie hover:shadow-maggie-sm hover:translate-x-0.5 hover:translate-y-0.5'
                 }`}
               >
                 {sport.iconSrc ? (
-                  <div className="relative w-5 h-5 rounded-md overflow-hidden shrink-0">
+                  <div className="relative w-5 h-5 rounded-md overflow-hidden shrink-0 border border-[#03594d]">
                     <Image
                       src={sport.iconSrc}
                       alt={sport.label}
@@ -126,13 +103,13 @@ export default function TurfsDiscoveryPage() {
               <button
                 key={loc.value}
                 onClick={() => setSelectedLocality(loc.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all border ${
                   selectedLocality === loc.value
-                    ? 'bg-neutral-800 text-white border border-neutral-700'
-                    : 'bg-neutral-950 border border-neutral-900 text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-[#03594d] text-[#82eda6] border-[#03594d]'
+                    : 'bg-white/80 border-[#03594d]/30 text-[#03594d] hover:bg-white'
                 }`}
               >
-                {loc.label}
+                📍 {loc.label}
               </button>
             ))}
           </div>
@@ -146,10 +123,10 @@ export default function TurfsDiscoveryPage() {
             ))}
           </div>
         ) : (
-          <div className="p-12 rounded-3xl bg-neutral-900/40 border border-neutral-800 text-center max-w-md mx-auto">
+          <div className="p-12 rounded-3xl bg-white border-2 border-[#03594d] shadow-maggie-lg text-center max-w-md mx-auto">
             <span className="text-4xl block mb-3">🔍</span>
-            <h3 className="text-base font-bold text-white mb-1">No Turfs Found</h3>
-            <p className="text-xs text-neutral-400 mb-4">
+            <h3 className="text-lg font-black text-[#03594d] mb-1">No Turfs Found</h3>
+            <p className="text-xs font-bold text-[#03594d]/70 mb-4">
               We couldn&apos;t find any verified venues matching your current sport and locality filters.
             </p>
             <button
@@ -157,7 +134,7 @@ export default function TurfsDiscoveryPage() {
                 setSelectedSport('all');
                 setSelectedLocality('all');
               }}
-              className="px-4 py-2 rounded-xl bg-neutral-800 text-xs font-semibold text-white hover:bg-neutral-700"
+              className="px-5 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider shadow-maggie-sm"
             >
               Reset Filters
             </button>
@@ -165,19 +142,8 @@ export default function TurfsDiscoveryPage() {
         )}
       </div>
 
-      {/* Footer Status & Compliance */}
-      <footer className="border-t border-neutral-800/80 px-6 py-8 text-center text-xs text-neutral-500 space-y-4">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-neutral-400">
-          <Link href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
-          <span>&bull;</span>
-          <Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
-          <span>&bull;</span>
-          <Link href="/refund-policy" className="hover:text-emerald-400 transition-colors">Cancellation & Refund Policy</Link>
-          <span>&bull;</span>
-          <Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link>
-        </div>
-        <p>GoTurf Platform &copy; 2026. Live in Mumbai &bull; Carter Road, Bandra West &bull; support@goturf.in</p>
-      </footer>
+      {/* Maggie Footer */}
+      <MaggieFooter />
     </main>
   );
 }

@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GoTurf | Live Turf Discovery & Booking in Mumbai",
-  description: "Find verified local turfs, see live slots and prices, and book Cricket, Football, Tennis, and Pickleball venues across Mumbai.",
+  title: "GoTurf | Your Pocket Pass to Mumbai Sports Turfs",
+  description: "Find verified local turfs, see live slots and prices, and book Cricket, Football, Tennis, and Pickleball venues across Mumbai fast.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#050507] text-[#ededed]">
+      <body className="min-h-full flex flex-col bg-[#82eda6] text-[#03594d] selection:bg-[#ffff94] selection:text-[#03594d]">
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

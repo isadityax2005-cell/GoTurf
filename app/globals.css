@@ -1,13 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  --background: #82eda6;
+  --foreground: #03594d;
+  
+  /* Maggie Signature Color Palette */
+  --maggie-mint: #82eda6;
+  --maggie-pine: #03594d;
+  --maggie-butter: #ffff94;
+  --maggie-peach: #fdc068;
+  --maggie-orange: #ff9124;
+  --maggie-lavender: #f6bbfd;
+  --maggie-cyan: #aefbff;
+  --maggie-cream: #f9f8f4;
+  --maggie-pink: #fc5681;
+  --maggie-border: #03594d;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-maggie-mint: var(--maggie-mint);
+  --color-maggie-pine: var(--maggie-pine);
+  --color-maggie-butter: var(--maggie-butter);
+  --color-maggie-peach: var(--maggie-peach);
+  --color-maggie-orange: var(--maggie-orange);
+  --color-maggie-lavender: var(--maggie-lavender);
+  --color-maggie-cyan: var(--maggie-cyan);
+  --color-maggie-cream: var(--maggie-cream);
+  --color-maggie-pink: var(--maggie-pink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -34,68 +54,108 @@ html.lenis body {
   pointer-events: none;
 }
 
-/* Custom Glass & Ambient Styles */
 body {
-  background: #050507;
-  color: #ededed;
+  background-color: var(--maggie-mint);
+  color: var(--maggie-pine);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-/* Glassmorphism primitives */
-.glass-panel {
-  background: rgba(18, 18, 22, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Handwritten Cursive Typography (Homemade Apple) */
+.font-handwriting {
+  font-family: 'Homemade Apple', cursive;
 }
 
-.glass-panel-glow {
-  background: rgba(18, 18, 22, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 0 35px -10px rgba(16, 185, 129, 0.15);
+/* Maggie Neo-Brutalist Hard Shadows */
+.shadow-maggie-sm {
+  box-shadow: 2px 2px 0px 0px #03594d;
 }
 
-.glass-badge {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.shadow-maggie {
+  box-shadow: 3px 3px 0px 0px #03594d;
 }
 
-/* Shimmer animation */
-@keyframes shimmer {
+.shadow-maggie-lg {
+  box-shadow: 5px 5px 0px 0px #03594d;
+}
+
+.shadow-maggie-xl {
+  box-shadow: 7px 7px 0px 0px #03594d;
+}
+
+/* Tactile Button Press */
+.btn-maggie-primary {
+  background-color: #03594d;
+  color: #82eda6;
+  border: 1.5px solid #03594d;
+  border-radius: 9999px;
+  box-shadow: 3px 3px 0px 0px rgba(3, 89, 77, 0.4);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-maggie-primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px rgba(3, 89, 77, 0.6);
+  background-color: #02463c;
+}
+
+.btn-maggie-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px rgba(3, 89, 77, 0.4);
+}
+
+.btn-maggie-secondary {
+  background-color: transparent;
+  color: #03594d;
+  border: 1.5px solid #03594d;
+  border-radius: 9999px;
+  box-shadow: 3px 3px 0px 0px #03594d;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-maggie-secondary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px #03594d;
+  background-color: rgba(3, 89, 77, 0.06);
+}
+
+.btn-maggie-secondary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #03594d;
+}
+
+/* Horizontal Infinite Marquee */
+@keyframes marquee-scroll {
   0% {
-    background-position: -200% 0;
+    transform: translateX(0%);
   }
   100% {
-    background-position: 200% 0;
+    transform: translateX(-50%);
   }
 }
 
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 4s infinite linear;
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 24s linear infinite;
 }
 
-/* Subtle float keyframes for 3D icons */
-@keyframes float-gentle {
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Subtle float keyframes for stickers */
+@keyframes float-tilt {
   0%, 100% {
-    transform: translateY(0px) rotate(0deg);
+    transform: translateY(0px) rotate(var(--tw-rotate, 0deg));
   }
   50% {
-    transform: translateY(-6px) rotate(1.5deg);
+    transform: translateY(-6px) rotate(calc(var(--tw-rotate, 0deg) + 1.5deg));
   }
 }
 
-.animate-float {
-  animation: float-gentle 5s ease-in-out infinite;
+.animate-float-tilt {
+  animation: float-tilt 4.5s ease-in-out infinite;
 }
