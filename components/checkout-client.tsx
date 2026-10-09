@@ -227,7 +227,8 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
   const durationMins = holdBooking
     ? Math.max(60, Math.round((new Date(holdBooking.end_at).getTime() - new Date(holdBooking.start_at).getTime()) / (60 * 1000)))
     : 60;
-  const durationLabel = durationMins >= 120 ? '2 Hours' : durationMins >= 90 ? '90 Mins' : '60 Mins';
+  const durationHours = Math.round(durationMins / 60);
+  const durationLabel = durationHours > 1 ? `${durationHours} Hours (${durationMins}m)` : `${durationMins} Mins`;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">

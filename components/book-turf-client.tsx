@@ -8,15 +8,19 @@ import { getActiveBookingsForCourt } from '@/lib/data/bookings';
 import {
   generateCourtSlots,
   findAvailableMultiHourWindows,
+  findContinuousAvailableBlocks,
   formatPaise,
   type SlotGridItem,
   type MultiHourWindow,
+  type ContinuousBlock,
 } from '@/lib/engine/slot-calculator';
 
 interface BookTurfClientProps {
   turf: Turf;
   initialCourtId?: string;
 }
+
+type DurationMode = 1 | 2 | 3 | 'custom';
 
 interface SelectedBookingTarget {
   courtId: string;
@@ -36,9 +40,11 @@ interface SuggestionModalState {
   reasonMessage: string;
   requestedDurationHours: number;
   availableWindows: MultiHourWindow[];
+  continuousBlocks: ContinuousBlock[];
   crossCourtSuggestions: {
     court: Court;
     windows: MultiHourWindow[];
+    continuousBlocks: ContinuousBlock[];
   }[];
 }
 
@@ -52,10 +58,13 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
   const [isHolding, setIsHolding] = useState(false);
   const [holdError, setHoldError] = useState<string | null>(null);
 
-  // Match Duration State: 1 Hour (60m) vs 2 Hours (120m)
-  const [durationHours, setDurationHours] = useState<1 | 2>(1);
+  // Match Duration Mode: 1h, 2h, 3h, or 'custom' (Multi-Select for 3+ hours)
+  const [durationMode, setDurationMode] = useState<DurationMode>(1);
 
-  // Selected Booking Target (Supports both 1-hour and 2-hour continuous slots)
+  // Custom multi-selected slot indices when in 'custom' mode
+  const [customSelectedIndices, setCustomSelectedIndices] = useState<number[]>([]);
+
+  // Selected Booking Target
   const [selectedBooking, setSelectedBooking] = useState<SelectedBookingTarget | null>(null);
 
   // Smart Suggestion Box Modal State
@@ -65,6 +74,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     reasonMessage: '',
     requestedDurationHours: 1,
     availableWindows: [],
+    continuousBlocks: [],
     crossCourtSuggestions: [],
   });
 
@@ -110,14 +120,22 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     });
   }, [selectedCourt, selectedDateStr]);
 
-  // Compute available 2-hour continuous windows on current court
-  const available2HourWindows = useMemo(() => {
-    return findAvailableMultiHourWindows(slots, 2);
+  // Compute all contiguous available blocks on current court
+  const continuousBlocks = useMemo(() => {
+    return findContinuousAvailableBlocks(slots);
   }, [slots]);
 
+  // Compute effective requested duration in hours
+  const effectiveRequestedDuration = useMemo(() => {
+    if (typeof durationMode === 'number') return durationMode;
+    return customSelectedIndices.length >= 3 ? customSelectedIndices.length : 3;
+  }, [durationMode, customSelectedIndices]);
+
   // Compute cross-court recommendations on other courts for this turf
-  const crossCourt2HourOptions = useMemo(() => {
+  const crossCourtSuggestions = useMemo(() => {
     const otherCourts = courts.filter((c) => c.id !== selectedCourt?.id);
+    const targetHours = effectiveRequestedDuration;
+
     return otherCourts
       .map((court) => {
         const cBookings = getActiveBookingsForCourt(court.id);
@@ -127,18 +145,21 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
           activeBookings: cBookings,
           now: new Date(),
         });
-        const cWindows = findAvailableMultiHourWindows(cSlots, durationHours);
-        return { court, windows: cWindows };
+        const cWindows = findAvailableMultiHourWindows(cSlots, targetHours);
+        const cBlocks = findContinuousAvailableBlocks(cSlots);
+        return { court, windows: cWindows, continuousBlocks: cBlocks };
       })
-      .filter((item) => item.windows.length > 0);
-  }, [courts, selectedCourt, selectedDateStr, durationHours]);
+      .filter((item) => item.windows.length > 0 || item.continuousBlocks.some((b) => b.durationHours >= 2));
+  }, [courts, selectedCourt, selectedDateStr, effectiveRequestedDuration]);
 
   // Open the Smart Suggestion Box Modal
   const openSuggestionModal = (attemptedSlot: SlotGridItem, customReason?: string) => {
+    const targetHours = effectiveRequestedDuration;
     let reason = customReason;
+
     if (!reason) {
-      if (durationHours === 2) {
-        reason = `${attemptedSlot.startTimeIST} cannot complete a continuous 2-hour match because the following hour is already reserved.`;
+      if (targetHours >= 2) {
+        reason = `${attemptedSlot.startTimeIST} cannot complete a continuous ${targetHours}-hour match because an overlapping hour is already reserved.`;
       } else {
         reason = `${attemptedSlot.startTimeIST} – ${attemptedSlot.endTimeIST} is already ${
           attemptedSlot.status === 'blocked' ? 'reserved offline by the venue' : 'booked by another squad'
@@ -146,34 +167,31 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
       }
     }
 
-    // Windows to suggest
-    const targetWindows =
-      durationHours === 2
-        ? available2HourWindows
-        : findAvailableMultiHourWindows(slots, 1);
+    const targetWindows = findAvailableMultiHourWindows(slots, targetHours);
 
     setSuggestionModal({
       isOpen: true,
       attemptedTimeLabel: attemptedSlot.startTimeIST,
       reasonMessage: reason,
-      requestedDurationHours: durationHours,
+      requestedDurationHours: targetHours,
       availableWindows: targetWindows,
-      crossCourtSuggestions: crossCourt2HourOptions,
+      continuousBlocks,
+      crossCourtSuggestions,
     });
   };
 
-  // Duration toggle handler
-  const handleDurationChange = (newDuration: 1 | 2) => {
-    setDurationHours(newDuration);
+  // Duration mode change handler
+  const handleDurationModeChange = (newMode: DurationMode) => {
+    setDurationMode(newMode);
     setSelectedBooking(null);
+    setCustomSelectedIndices([]);
   };
 
-  // Slot click handler
-  const handleSlotClick = (slot: SlotGridItem, slotIndex: number) => {
+  // Slot click handler for preset modes (1h, 2h, 3h)
+  const handlePresetSlotClick = (slot: SlotGridItem, slotIndex: number, requiredHours: number) => {
     if (!selectedCourt) return;
 
-    if (durationHours === 1) {
-      // 1-Hour Mode
+    if (requiredHours === 1) {
       if (slot.status !== 'available') {
         openSuggestionModal(slot);
         return;
@@ -193,49 +211,162 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
       return;
     }
 
-    // 2-Hour Mode
-    const nextSlot = slots[slotIndex + 1];
+    // Multi-hour preset (2 Hours or 3 Hours)
+    const chunk = slots.slice(slotIndex, slotIndex + requiredHours);
 
-    if (!nextSlot) {
+    if (chunk.length < requiredHours) {
       openSuggestionModal(
         slot,
-        `${slot.startTimeIST} is the last operating hour of the day. A continuous 2-hour game requires an earlier start time.`
+        `${slot.startTimeIST} does not have ${requiredHours} remaining operating hours before venue closing.`
       );
       return;
     }
 
-    const firstOk = slot.status === 'available';
-    const secondOk = nextSlot.status === 'available';
+    const unavailableIndex = chunk.findIndex((s) => s.status !== 'available');
+    if (unavailableIndex !== -1) {
+      const badSlot = chunk[unavailableIndex];
+      const conflictReason =
+        badSlot.id === slot.id
+          ? `${slot.startTimeIST} is already ${badSlot.status === 'blocked' ? 'reserved offline' : 'booked'}.`
+          : `${slot.startTimeIST} is free, but hour ${unavailableIndex + 1} (${badSlot.startTimeIST} – ${badSlot.endTimeIST}) is already ${
+              badSlot.status === 'blocked' ? 'reserved offline' : 'booked'
+            }.`;
 
-    if (!firstOk || !secondOk) {
-      let specificReason = '';
-      if (!firstOk && !secondOk) {
-        specificReason = `Both ${slot.startTimeIST} and ${nextSlot.startTimeIST} are already reserved.`;
-      } else if (!firstOk) {
-        specificReason = `${slot.startTimeIST} – ${slot.endTimeIST} is already ${
-          slot.status === 'blocked' ? 'reserved offline' : 'booked'
-        }.`;
-      } else {
-        specificReason = `${slot.startTimeIST} is free, but the 2nd hour (${nextSlot.startTimeIST} – ${nextSlot.endTimeIST}) is already ${
-          nextSlot.status === 'blocked' ? 'reserved offline' : 'booked'
-        }.`;
-      }
-      openSuggestionModal(slot, specificReason);
+      openSuggestionModal(slot, conflictReason);
       return;
     }
 
-    // Both hours are free! Lock the 2-hour window
-    const combinedPricePaise = slot.pricePaise + nextSlot.pricePaise;
+    // All consecutive hours are free!
+    const combinedPricePaise = chunk.reduce((sum, s) => sum + s.pricePaise, 0);
+    const lastSlot = chunk[chunk.length - 1];
+
     setSelectedBooking({
       courtId: selectedCourt.id,
       courtName: selectedCourt.name,
       startAtUTC: slot.startAtUTC,
-      endAtUTC: nextSlot.endAtUTC,
+      endAtUTC: lastSlot.endAtUTC,
       startTimeIST: slot.startTimeIST,
-      endTimeIST: nextSlot.endTimeIST,
+      endTimeIST: lastSlot.endTimeIST,
       pricePaise: combinedPricePaise,
       priceFormatted: formatPaise(combinedPricePaise),
-      durationHours: 2,
+      durationHours: requiredHours,
+    });
+  };
+
+  // Slot click handler for 'custom' multi-select mode (3+ Hours)
+  const handleCustomSlotClick = (slot: SlotGridItem, slotIndex: number) => {
+    if (!selectedCourt) return;
+
+    if (slot.status !== 'available') {
+      openSuggestionModal(slot);
+      return;
+    }
+
+    // If nothing selected yet, start the chain
+    if (customSelectedIndices.length === 0) {
+      setCustomSelectedIndices([slotIndex]);
+      setSelectedBooking({
+        courtId: selectedCourt.id,
+        courtName: selectedCourt.name,
+        startAtUTC: slot.startAtUTC,
+        endAtUTC: slot.endAtUTC,
+        startTimeIST: slot.startTimeIST,
+        endTimeIST: slot.endTimeIST,
+        pricePaise: slot.pricePaise,
+        priceFormatted: slot.priceFormatted,
+        durationHours: 1,
+      });
+      return;
+    }
+
+    // Toggle if clicking the boundary slot to deselect
+    if (customSelectedIndices.includes(slotIndex)) {
+      const min = Math.min(...customSelectedIndices);
+      const max = Math.max(...customSelectedIndices);
+
+      if (slotIndex === min && customSelectedIndices.length > 1) {
+        const nextIndices = customSelectedIndices.filter((idx) => idx !== min);
+        updateCustomBookingFromIndices(nextIndices);
+        return;
+      }
+      if (slotIndex === max && customSelectedIndices.length > 1) {
+        const nextIndices = customSelectedIndices.filter((idx) => idx !== max);
+        updateCustomBookingFromIndices(nextIndices);
+        return;
+      }
+      // Clicking middle slot restarts chain from this slot
+      setCustomSelectedIndices([slotIndex]);
+      updateCustomBookingFromIndices([slotIndex]);
+      return;
+    }
+
+    // Check if slot is adjacent to current selection
+    const min = Math.min(...customSelectedIndices);
+    const max = Math.max(...customSelectedIndices);
+
+    if (slotIndex === min - 1) {
+      // Prepend consecutive hour
+      const nextIndices = [slotIndex, ...customSelectedIndices].sort((a, b) => a - b);
+      updateCustomBookingFromIndices(nextIndices);
+      return;
+    }
+
+    if (slotIndex === max + 1) {
+      // Append consecutive hour
+      const nextIndices = [...customSelectedIndices, slotIndex].sort((a, b) => a - b);
+      updateCustomBookingFromIndices(nextIndices);
+      return;
+    }
+
+    // Clicked slot with a gap between selection!
+    // Check if the entire range between min and slotIndex is available
+    const newMin = Math.min(min, slotIndex);
+    const newMax = Math.max(max, slotIndex);
+    const rangeIndices: number[] = [];
+    let hasGap = false;
+
+    for (let i = newMin; i <= newMax; i++) {
+      if (slots[i]?.status !== 'available') {
+        hasGap = true;
+        break;
+      }
+      rangeIndices.push(i);
+    }
+
+    if (hasGap) {
+      openSuggestionModal(
+        slot,
+        `Cannot link ${slots[min].startTimeIST} with ${slot.startTimeIST} because there are booked slots in between. Match sessions must be continuous without gaps.`
+      );
+      return;
+    }
+
+    updateCustomBookingFromIndices(rangeIndices);
+  };
+
+  const updateCustomBookingFromIndices = (indices: number[]) => {
+    if (!selectedCourt || indices.length === 0) {
+      setSelectedBooking(null);
+      setCustomSelectedIndices([]);
+      return;
+    }
+
+    setCustomSelectedIndices(indices);
+    const firstSlot = slots[indices[0]];
+    const lastSlot = slots[indices[indices.length - 1]];
+    const totalPaise = indices.reduce((sum, idx) => sum + (slots[idx]?.pricePaise || 0), 0);
+    const duration = indices.length;
+
+    setSelectedBooking({
+      courtId: selectedCourt.id,
+      courtName: selectedCourt.name,
+      startAtUTC: firstSlot.startAtUTC,
+      endAtUTC: lastSlot.endAtUTC,
+      startTimeIST: firstSlot.startTimeIST,
+      endTimeIST: lastSlot.endTimeIST,
+      pricePaise: totalPaise,
+      priceFormatted: formatPaise(totalPaise),
+      durationHours: duration,
     });
   };
 
@@ -353,6 +484,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   onClick={() => {
                     setSelectedCourtId(court.id);
                     setSelectedBooking(null);
+                    setCustomSelectedIndices([]);
                   }}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     selectedCourt?.id === court.id
@@ -379,6 +511,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 onClick={() => {
                   setSelectedDateStr(item.dateStr);
                   setSelectedBooking(null);
+                  setCustomSelectedIndices([]);
                 }}
                 className={`flex flex-col items-center justify-center min-w-[85px] py-3 px-3 rounded-2xl border text-xs font-semibold transition-all cursor-pointer ${
                   selectedDateStr === item.dateStr
@@ -393,47 +526,129 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
           </div>
         </div>
 
-        {/* Match Duration Selector (1 Hour vs 2 Hours) */}
-        <div className="mb-8 p-4 rounded-2xl bg-neutral-900/40 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">Match Duration:</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Single Tap Lock
-              </span>
+        {/* =================================================================== */}
+        {/* MATCH DURATION & FLEXIBLE MULTI-SLOT SELECTOR */}
+        {/* =================================================================== */}
+        <div className="mb-6 p-4 rounded-3xl bg-neutral-900/40 border border-neutral-800 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white uppercase tracking-wider">Match Duration:</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Continuous Lock
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                Lock 1, 2, 3 or flexible 3+ hours continuously in a single transaction.
+              </p>
             </div>
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              Lock continuous slots together without risk of other squads jumping in between.
-            </p>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleDurationModeChange(1)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  durationMode === 1
+                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                }`}
+              >
+                ⏱️ 1 Hour
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDurationModeChange(2)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  durationMode === 2
+                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                }`}
+              >
+                🏏 2 Hours
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDurationModeChange(3)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  durationMode === 3
+                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                }`}
+              >
+                🏆 3 Hours
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDurationModeChange('custom')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  durationMode === 'custom'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-black shadow-md shadow-emerald-500/20 font-black'
+                    : 'bg-neutral-900 text-emerald-400 hover:text-white border border-emerald-500/30'
+                }`}
+              >
+                <span>⚡ Flexible (3+ Hours)</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleDurationChange(1)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                durationHours === 1
-                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
-                  : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
-              }`}
-            >
-              ⏱️ 1 Hour (60m)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDurationChange(2)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                durationHours === 2
-                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
-                  : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
-              }`}
-            >
-              <span>🏏 2 Hours (120m)</span>
-              <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold ${durationHours === 2 ? 'bg-black text-emerald-400' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                Recommended
+          {/* At-a-Glance: Long Play Availability Windows */}
+          {continuousBlocks.length > 0 && (
+            <div className="pt-2 border-t border-neutral-800/60 flex flex-wrap items-center gap-2">
+              <span className="text-[10px] text-neutral-400 uppercase font-semibold">
+                Open Blocks Today:
               </span>
-            </button>
-          </div>
+              {continuousBlocks.map((blk) => (
+                <button
+                  key={blk.startAtUTC}
+                  type="button"
+                  onClick={() => {
+                    const blkSlots = blk.slots;
+                    if (blkSlots.length === 0) return;
+                    setSelectedBooking({
+                      courtId: selectedCourt.id,
+                      courtName: selectedCourt.name,
+                      startAtUTC: blk.startAtUTC,
+                      endAtUTC: blk.endAtUTC,
+                      startTimeIST: blk.startTimeIST,
+                      endTimeIST: blk.endTimeIST,
+                      pricePaise: blk.totalPricePaise,
+                      priceFormatted: blk.priceFormatted,
+                      durationHours: blk.durationHours,
+                    });
+                    if (durationMode === 'custom') {
+                      const indices = blkSlots.map((s) => slots.findIndex((slot) => slot.id === s.id)).filter((i) => i !== -1);
+                      setCustomSelectedIndices(indices);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-300 hover:border-emerald-500/50 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span className="text-emerald-400 font-bold">{blk.durationHours}H Open</span>
+                  <span>{blk.startTimeIST} – {blk.endTimeIST}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Custom mode helper text */}
+          {durationMode === 'custom' && (
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center justify-between">
+              <span>
+                💡 <strong>Multi-Select Active:</strong> Tap consecutive slots below to chain 3, 4, or 5+ hours together into a single booking!
+              </span>
+              {customSelectedIndices.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomSelectedIndices([]);
+                    setSelectedBooking(null);
+                  }}
+                  className="text-emerald-400 hover:underline font-bold text-[11px] ml-3 cursor-pointer"
+                >
+                  Reset Selection
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Slots Sections */}
@@ -448,20 +663,29 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                     Evening & Night Slots (Prime Time)
                   </h3>
                 </div>
-                {durationHours === 2 && (
-                  <span className="text-[10px] text-neutral-400">Showing 2-Hour Combinations</span>
+                {typeof durationMode === 'number' && durationMode > 1 && (
+                  <span className="text-[10px] text-neutral-400">
+                    Showing {durationMode}-Hour Windows
+                  </span>
                 )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {groupedSlots.evening.map(({ slot, index }) => (
-                  <SlotCardItem
+                  <SlotCardUnified
                     key={slot.id}
                     slot={slot}
                     index={index}
                     allSlots={slots}
-                    durationHours={durationHours}
-                    isSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
-                    onClick={() => handleSlotClick(slot, index)}
+                    durationMode={durationMode}
+                    isCustomSelected={customSelectedIndices.includes(index)}
+                    isPresetSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
+                    onClick={() => {
+                      if (durationMode === 'custom') {
+                        handleCustomSlotClick(slot, index);
+                      } else {
+                        handlePresetSlotClick(slot, index, durationMode);
+                      }
+                    }}
                     onUnavailableClick={() => openSuggestionModal(slot)}
                   />
                 ))}
@@ -480,14 +704,21 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {groupedSlots.afternoon.map(({ slot, index }) => (
-                  <SlotCardItem
+                  <SlotCardUnified
                     key={slot.id}
                     slot={slot}
                     index={index}
                     allSlots={slots}
-                    durationHours={durationHours}
-                    isSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
-                    onClick={() => handleSlotClick(slot, index)}
+                    durationMode={durationMode}
+                    isCustomSelected={customSelectedIndices.includes(index)}
+                    isPresetSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
+                    onClick={() => {
+                      if (durationMode === 'custom') {
+                        handleCustomSlotClick(slot, index);
+                      } else {
+                        handlePresetSlotClick(slot, index, durationMode);
+                      }
+                    }}
                     onUnavailableClick={() => openSuggestionModal(slot)}
                   />
                 ))}
@@ -506,14 +737,21 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {groupedSlots.morning.map(({ slot, index }) => (
-                  <SlotCardItem
+                  <SlotCardUnified
                     key={slot.id}
                     slot={slot}
                     index={index}
                     allSlots={slots}
-                    durationHours={durationHours}
-                    isSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
-                    onClick={() => handleSlotClick(slot, index)}
+                    durationMode={durationMode}
+                    isCustomSelected={customSelectedIndices.includes(index)}
+                    isPresetSelected={selectedBooking?.startAtUTC === slot.startAtUTC}
+                    onClick={() => {
+                      if (durationMode === 'custom') {
+                        handleCustomSlotClick(slot, index);
+                      } else {
+                        handlePresetSlotClick(slot, index, durationMode);
+                      }
+                    }}
                     onUnavailableClick={() => openSuggestionModal(slot)}
                   />
                 ))}
@@ -546,7 +784,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
-                onClick={() => setSelectedBooking(null)}
+                onClick={() => {
+                  setSelectedBooking(null);
+                  setCustomSelectedIndices([]);
+                }}
                 className="px-3 py-2 text-xs text-neutral-400 hover:text-white cursor-pointer"
               >
                 Clear
@@ -571,7 +812,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
       )}
 
       {/* ===================================================================== */}
-      {/* SMART 2-HOUR SUGGESTION BOX (INTERACTIVE MODAL) */}
+      {/* SMART ALTERNATIVE SUGGESTION BOX (DYNAMIC FOR 1, 2, 3+ HOURS) */}
       {/* ===================================================================== */}
       {suggestionModal.isOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
@@ -584,10 +825,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white tracking-tight">
-                    Smart Slot Assistant
+                    Smart Slot Assistant &bull; {suggestionModal.requestedDurationHours}-Hour Match
                   </h3>
                   <p className="text-xs text-neutral-400">
-                    Alternative times for continuous play
+                    Continuous alternative slots for extended play
                   </p>
                 </div>
               </div>
@@ -604,12 +845,12 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs leading-relaxed flex items-start gap-2.5">
               <span className="text-base leading-none">⚠️</span>
               <div>
-                <p className="font-semibold text-amber-300">Slot Conflict Notice:</p>
+                <p className="font-semibold text-amber-300">Conflict Explanation:</p>
                 <p className="mt-0.5 opacity-90">{suggestionModal.reasonMessage}</p>
               </div>
             </div>
 
-            {/* Available 2-Hour Continuous Windows on Current Court */}
+            {/* Available Continuous Windows on Current Court */}
             <div>
               <div className="flex items-center justify-between mb-2.5">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">
@@ -621,7 +862,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               </div>
 
               {suggestionModal.availableWindows.length > 0 ? (
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {suggestionModal.availableWindows.map((win) => (
                     <div
                       key={win.startAtUTC}
@@ -667,13 +908,18 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-neutral-500 p-3 rounded-xl bg-neutral-950 border border-neutral-800/60">
-                  No continuous {suggestionModal.requestedDurationHours}-hour slots remaining on this court today. Check other courts below!
-                </p>
+                <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800/60 text-xs text-neutral-400">
+                  <p>No continuous {suggestionModal.requestedDurationHours}-hour slots remaining on this court today.</p>
+                  {suggestionModal.continuousBlocks.length > 0 && (
+                    <p className="text-[11px] text-emerald-400 mt-1">
+                      💡 Longest available block on this court: <strong>{suggestionModal.continuousBlocks[0].durationHours} Hours</strong> ({suggestionModal.continuousBlocks[0].startTimeIST} – {suggestionModal.continuousBlocks[0].endTimeIST}).
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* Cross-Court Recommendations (Check other courts at this venue!) */}
+            {/* Cross-Court Recommendations (Other courts at this venue!) */}
             {suggestionModal.crossCourtSuggestions.length > 0 && (
               <div className="pt-2 border-t border-neutral-800">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">
@@ -681,43 +927,85 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 </h4>
 
                 <div className="space-y-2">
-                  {suggestionModal.crossCourtSuggestions.map(({ court, windows }) => {
+                  {suggestionModal.crossCourtSuggestions.map(({ court, windows, continuousBlocks: cBlocks }) => {
                     const firstWin = windows[0];
-                    if (!firstWin) return null;
-                    return (
-                      <div
-                        key={court.id}
-                        className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-3"
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-white">{court.name}</p>
-                          <p className="text-[11px] text-neutral-400 mt-0.5">
-                            Has <strong className="text-emerald-400">{firstWin.startTimeIST} – {firstWin.endTimeIST}</strong> ({firstWin.priceFormatted}) open!
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedCourtId(court.id);
-                            setSelectedBooking({
-                              courtId: court.id,
-                              courtName: court.name,
-                              startAtUTC: firstWin.startAtUTC,
-                              endAtUTC: firstWin.endAtUTC,
-                              startTimeIST: firstWin.startTimeIST,
-                              endTimeIST: firstWin.endTimeIST,
-                              pricePaise: firstWin.totalPricePaise,
-                              priceFormatted: firstWin.priceFormatted,
-                              durationHours: firstWin.durationHours,
-                            });
-                            setSuggestionModal((prev) => ({ ...prev, isOpen: false }));
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                    if (firstWin) {
+                      return (
+                        <div
+                          key={court.id}
+                          className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-3"
                         >
-                          Switch & Select &rarr;
-                        </button>
-                      </div>
-                    );
+                          <div>
+                            <p className="text-xs font-bold text-white">{court.name}</p>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">
+                              Has <strong className="text-emerald-400">{firstWin.startTimeIST} – {firstWin.endTimeIST}</strong> ({firstWin.priceFormatted}) open!
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCourtId(court.id);
+                              setSelectedBooking({
+                                courtId: court.id,
+                                courtName: court.name,
+                                startAtUTC: firstWin.startAtUTC,
+                                endAtUTC: firstWin.endAtUTC,
+                                startTimeIST: firstWin.startTimeIST,
+                                endTimeIST: firstWin.endTimeIST,
+                                pricePaise: firstWin.totalPricePaise,
+                                priceFormatted: firstWin.priceFormatted,
+                                durationHours: firstWin.durationHours,
+                              });
+                              setSuggestionModal((prev) => ({ ...prev, isOpen: false }));
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            Switch & Select &rarr;
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // If exact window not found, show longest block on other court
+                    const longestBlock = cBlocks[0];
+                    if (longestBlock && longestBlock.durationHours >= 2) {
+                      return (
+                        <div
+                          key={court.id}
+                          className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3"
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-white">{court.name}</p>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">
+                              Open for <strong className="text-emerald-400">{longestBlock.durationHours} Hours</strong> ({longestBlock.startTimeIST} – {longestBlock.endTimeIST})
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCourtId(court.id);
+                              setSelectedBooking({
+                                courtId: court.id,
+                                courtName: court.name,
+                                startAtUTC: longestBlock.startAtUTC,
+                                endAtUTC: longestBlock.endAtUTC,
+                                startTimeIST: longestBlock.startTimeIST,
+                                endTimeIST: longestBlock.endTimeIST,
+                                pricePaise: longestBlock.totalPricePaise,
+                                priceFormatted: longestBlock.priceFormatted,
+                                durationHours: longestBlock.durationHours,
+                              });
+                              setSuggestionModal((prev) => ({ ...prev, isOpen: false }));
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            Switch & Select &rarr;
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return null;
                   })}
                 </div>
               </div>
@@ -741,28 +1029,30 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
 }
 
 // ============================================================================
-// SLOT CARD COMPONENT
-// Supports both 1-hour slots and combined 2-hour slots
+// UNIFIED SLOT CARD COMPONENT
+// Handles 1h, 2h, 3h presets and custom multi-select
 // ============================================================================
-function SlotCardItem({
+function SlotCardUnified({
   slot,
   index,
   allSlots,
-  durationHours,
-  isSelected,
+  durationMode,
+  isCustomSelected,
+  isPresetSelected,
   onClick,
   onUnavailableClick,
 }: {
   slot: SlotGridItem;
   index: number;
   allSlots: SlotGridItem[];
-  durationHours: 1 | 2;
-  isSelected: boolean;
+  durationMode: DurationMode;
+  isCustomSelected: boolean;
+  isPresetSelected: boolean;
   onClick: () => void;
   onUnavailableClick: () => void;
 }) {
-  if (durationHours === 1) {
-    // Standard 1-Hour Mode
+  // Custom Multi-Select Mode
+  if (durationMode === 'custom') {
     const isAvailable = slot.status === 'available';
 
     return (
@@ -770,7 +1060,64 @@ function SlotCardItem({
         type="button"
         onClick={isAvailable ? onClick : onUnavailableClick}
         className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
-          isSelected
+          isCustomSelected
+            ? 'bg-emerald-500/20 border-emerald-400 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+            : isAvailable
+            ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
+            : 'bg-neutral-950/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
+        }`}
+      >
+        <div>
+          <div className="flex justify-between items-start mb-1">
+            <span suppressHydrationWarning className="text-xs font-bold text-white tracking-tight">
+              {slot.startTimeIST}
+            </span>
+            {isCustomSelected ? (
+              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500 text-black">
+                ✓ Added
+              </span>
+            ) : (
+              isAvailable && (
+                <span className="text-[9px] text-neutral-400 border border-neutral-800 px-1 rounded">
+                  + Add
+                </span>
+              )
+            )}
+          </div>
+          <span suppressHydrationWarning className="text-[10px] text-neutral-400 block">
+            {slot.endTimeIST}
+          </span>
+        </div>
+
+        <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">
+          {isAvailable ? (
+            <>
+              <span className="text-xs font-bold text-emerald-400">{slot.priceFormatted}</span>
+              <span className="text-[9px] font-semibold text-neutral-500">1 Hour</span>
+            </>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500">
+                {slot.status === 'blocked' ? 'Offline Block' : slot.status === 'booked' ? 'Booked' : 'Passed'}
+              </span>
+              <span className="text-[9px] text-amber-400/80 font-medium">Alternatives &rarr;</span>
+            </div>
+          )}
+        </div>
+      </button>
+    );
+  }
+
+  // 1-Hour Mode
+  if (durationMode === 1) {
+    const isAvailable = slot.status === 'available';
+
+    return (
+      <button
+        type="button"
+        onClick={isAvailable ? onClick : onUnavailableClick}
+        className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
+          isPresetSelected
             ? 'bg-emerald-500/15 border-emerald-400 shadow-md shadow-emerald-500/20'
             : isAvailable
             ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
@@ -810,25 +1157,24 @@ function SlotCardItem({
     );
   }
 
-  // 2-Hour Mode: Evaluates slot[i] and slot[i+1] together
-  const nextSlot = allSlots[index + 1];
-  const firstAvailable = slot.status === 'available';
-  const secondAvailable = nextSlot?.status === 'available';
-  const is2HourAvailable = firstAvailable && Boolean(secondAvailable);
+  // Multi-Hour Presets (2 Hours or 3 Hours)
+  const requiredHours = durationMode;
+  const chunk = allSlots.slice(index, index + requiredHours);
+  const hasFullLength = chunk.length === requiredHours;
+  const allAvailable = hasFullLength && chunk.every((s) => s.status === 'available');
 
-  const displayEndTime = nextSlot ? nextSlot.endTimeIST : slot.endTimeIST;
-  const combinedPricePaise = slot.pricePaise + (nextSlot ? nextSlot.pricePaise : 0);
+  const displayEndTime = hasFullLength ? chunk[chunk.length - 1].endTimeIST : slot.endTimeIST;
+  const combinedPricePaise = chunk.reduce((sum, s) => sum + s.pricePaise, 0);
   const combinedPriceFormatted = formatPaise(combinedPricePaise);
-  const isPeak = slot.isPeak || Boolean(nextSlot?.isPeak);
 
   return (
     <button
       type="button"
-      onClick={is2HourAvailable ? onClick : onUnavailableClick}
+      onClick={allAvailable ? onClick : onUnavailableClick}
       className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
-        isSelected
+        isPresetSelected
           ? 'bg-emerald-500/15 border-emerald-400 shadow-md shadow-emerald-500/20'
-          : is2HourAvailable
+          : allAvailable
           ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
           : 'bg-neutral-950/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
       }`}
@@ -839,7 +1185,7 @@ function SlotCardItem({
             {slot.startTimeIST}
           </span>
           <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-emerald-400 border border-neutral-700">
-            2 Hours
+            {requiredHours} Hours
           </span>
         </div>
         <span suppressHydrationWarning className="text-[10px] text-neutral-400 block">
@@ -848,19 +1194,19 @@ function SlotCardItem({
       </div>
 
       <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">
-        {is2HourAvailable ? (
+        {allAvailable ? (
           <>
             <span className="text-xs font-bold text-emerald-400">{combinedPriceFormatted}</span>
-            <span className="text-[9px] font-semibold text-emerald-500">2H Free</span>
+            <span className="text-[9px] font-semibold text-emerald-500">{requiredHours}H Free</span>
           </>
         ) : (
           <div className="flex items-center justify-between w-full">
             <span className="text-[10px] font-bold text-neutral-500">
-              {!firstAvailable
+              {slot.status !== 'available'
                 ? slot.status === 'blocked'
                   ? 'Blocked'
                   : 'Booked'
-                : '2nd Hr Taken'}
+                : 'Split / Taken'}
             </span>
             <span className="text-[9px] text-amber-400/80 font-medium">Alternatives &rarr;</span>
           </div>

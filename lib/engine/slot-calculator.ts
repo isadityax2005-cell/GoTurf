@@ -262,3 +262,61 @@ export function findAvailableMultiHourWindows(
 
   return windows;
 }
+
+export interface ContinuousBlock {
+  courtId: string;
+  startAtUTC: string;
+  endAtUTC: string;
+  startTimeIST: string;
+  endTimeIST: string;
+  durationHours: number;
+  totalPricePaise: number;
+  priceFormatted: string;
+  slots: SlotGridItem[];
+}
+
+export function findContinuousAvailableBlocks(slots: SlotGridItem[]): ContinuousBlock[] {
+  const blocks: ContinuousBlock[] = [];
+  let currentChunk: SlotGridItem[] = [];
+
+  for (const slot of slots) {
+    if (slot.status === 'available') {
+      currentChunk.push(slot);
+    } else {
+      if (currentChunk.length > 0) {
+        const durationHours = currentChunk.length;
+        const totalPricePaise = currentChunk.reduce((sum, s) => sum + s.pricePaise, 0);
+        blocks.push({
+          courtId: currentChunk[0].courtId,
+          startAtUTC: currentChunk[0].startAtUTC,
+          endAtUTC: currentChunk[currentChunk.length - 1].endAtUTC,
+          startTimeIST: currentChunk[0].startTimeIST,
+          endTimeIST: currentChunk[currentChunk.length - 1].endTimeIST,
+          durationHours,
+          totalPricePaise,
+          priceFormatted: formatPaise(totalPricePaise),
+          slots: [...currentChunk],
+        });
+        currentChunk = [];
+      }
+    }
+  }
+
+  if (currentChunk.length > 0) {
+    const durationHours = currentChunk.length;
+    const totalPricePaise = currentChunk.reduce((sum, s) => sum + s.pricePaise, 0);
+    blocks.push({
+      courtId: currentChunk[0].courtId,
+      startAtUTC: currentChunk[0].startAtUTC,
+      endAtUTC: currentChunk[currentChunk.length - 1].endAtUTC,
+      startTimeIST: currentChunk[0].startTimeIST,
+      endTimeIST: currentChunk[currentChunk.length - 1].endTimeIST,
+      durationHours,
+      totalPricePaise,
+      priceFormatted: formatPaise(totalPricePaise),
+      slots: [...currentChunk],
+    });
+  }
+
+  return blocks;
+}
