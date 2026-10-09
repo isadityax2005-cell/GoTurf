@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import TurfCard from '@/components/turf-card';
 import { DEMO_TURFS } from '@/lib/data/turfs';
 import type { SportType } from '@/types/database';
@@ -10,12 +11,12 @@ export default function TurfsDiscoveryPage() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'all'>('all');
   const [selectedLocality, setSelectedLocality] = useState<string>('all');
 
-  const sportsList: { label: string; value: SportType | 'all'; icon: string }[] = [
-    { label: 'All Sports', value: 'all', icon: '🏆' },
-    { label: 'Cricket', value: 'cricket', icon: '🏏' },
-    { label: 'Football', value: 'football', icon: '⚽' },
-    { label: 'Tennis', value: 'tennis', icon: '🎾' },
-    { label: 'Pickleball', value: 'pickleball', icon: '🏓' },
+  const sportsList: { label: string; value: SportType | 'all'; iconSrc?: string; emoji?: string }[] = [
+    { label: 'All Sports', value: 'all', emoji: '🏆' },
+    { label: 'Cricket', value: 'cricket', iconSrc: '/icons/3d-cricket.jpg' },
+    { label: 'Football', value: 'football', iconSrc: '/icons/3d-football.jpg' },
+    { label: 'Pickleball', value: 'pickleball', iconSrc: '/icons/3d-pickleball.jpg' },
+    { label: 'Tennis', value: 'tennis', iconSrc: '/icons/3d-tennis.jpg' },
   ];
 
   const localities = [
@@ -96,13 +97,24 @@ export default function TurfsDiscoveryPage() {
               <button
                 key={sport.value}
                 onClick={() => setSelectedSport(sport.value)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
                   selectedSport === sport.value
-                    ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 font-bold'
                     : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white'
                 }`}
               >
-                <span>{sport.icon}</span>
+                {sport.iconSrc ? (
+                  <div className="relative w-5 h-5 rounded-md overflow-hidden shrink-0">
+                    <Image
+                      src={sport.iconSrc}
+                      alt={sport.label}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <span>{sport.emoji}</span>
+                )}
                 <span>{sport.label}</span>
               </button>
             ))}
@@ -153,9 +165,18 @@ export default function TurfsDiscoveryPage() {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-800/80 px-6 py-6 text-center text-xs text-neutral-500">
-        GoTurf &bull; Live Turf Discovery in Mumbai
+      {/* Footer Status & Compliance */}
+      <footer className="border-t border-neutral-800/80 px-6 py-8 text-center text-xs text-neutral-500 space-y-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-neutral-400">
+          <Link href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+          <span>&bull;</span>
+          <Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+          <span>&bull;</span>
+          <Link href="/refund-policy" className="hover:text-emerald-400 transition-colors">Cancellation & Refund Policy</Link>
+          <span>&bull;</span>
+          <Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link>
+        </div>
+        <p>GoTurf Platform &copy; 2026. Live in Mumbai &bull; Carter Road, Bandra West &bull; support@goturf.in</p>
       </footer>
     </main>
   );
