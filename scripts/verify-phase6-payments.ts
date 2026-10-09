@@ -62,6 +62,7 @@ async function runPhase6Tests() {
     startAtUTC: matchStart,
     endAtUTC: matchEnd,
     pricePaise: baseSlotPaise,
+    paymentMode: 'full_online',
     now,
   });
 

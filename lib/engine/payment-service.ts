@@ -36,6 +36,7 @@ export function getWebhookSecret(): string {
 export interface CreateOrderParams {
   holdId: string;
   playerId?: string;
+  paymentMode?: 'full_online' | 'token_advance';
 }
 
 export interface CreateOrderResult {
@@ -47,6 +48,9 @@ export interface CreateOrderResult {
     currency: string;
     courtPricePaise: number;
     platformFeePaise: number;
+    advancePaise?: number;
+    balancePaise?: number;
+    paymentMode?: string;
     keyId: string;
   };
   error?: string;
@@ -70,9 +74,31 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
     return { success: false, error: 'Slot hold has expired. Please pick the slot again.', code: 'HOLD_EXPIRED' };
   }
 
-  // Server authoritatively calculates amount: Court price + ₹45 Platform Fee
+  // Allow player to toggle mode on checkout
+  if (params.paymentMode) {
+    booking.payment_mode = params.paymentMode;
+    if (params.paymentMode === 'full_online') {
+      booking.advance_amount_paise = booking.price_paise;
+      booking.balance_amount_paise = 0;
+    } else {
+      booking.advance_amount_paise = booking.advance_amount_paise || 20000;
+      booking.balance_amount_paise = Math.max(0, booking.price_paise - booking.advance_amount_paise);
+    }
+  }
+
+  // Server authoritatively calculates amount based on payment_mode
   const courtPricePaise = booking.price_paise;
-  const totalAmountPaise = courtPricePaise + PLATFORM_FEE_PAISE;
+  const isAdvanceMode = booking.payment_mode === 'token_advance';
+  const advancePaise = isAdvanceMode
+    ? (booking.advance_amount_paise !== undefined ? booking.advance_amount_paise : 20000)
+    : courtPricePaise;
+  const balancePaise = isAdvanceMode
+    ? Math.max(0, courtPricePaise - advancePaise)
+    : 0;
+
+  // Amount charged online right now: Advance/Full + ₹45 Platform Fee
+  const totalAmountPaise = advancePaise + PLATFORM_FEE_PAISE;
+
 
   const orderId = `order_rzp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_GoTurfMumbaiKey';
@@ -105,6 +131,7 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
     },
   };
 }
+
 
 // ----------------------------------------------------------------------------
 // 2. Cryptographic HMAC-SHA256 Signature Verification
@@ -160,6 +187,7 @@ export interface RazorpayWebhookPayload {
         method?: string;
         email?: string;
         contact?: string;
+        vpa?: string;
       };
     };
     order?: {

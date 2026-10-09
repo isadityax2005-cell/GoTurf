@@ -78,6 +78,8 @@ export interface CreateHoldParams {
   notes?: string;
   holdMinutes?: number;
   now?: Date;
+  paymentMode?: 'full_online' | 'token_advance';
+  advanceAmountPaise?: number;
 }
 
 export interface CreateHoldResult {
@@ -88,16 +90,7 @@ export interface CreateHoldResult {
 }
 
 // 2. Concurrency-Safe Hold Creation (The Bouncer)
-export async function createTemporaryHold(params: {
-  courtId: string;
-  playerId: string;
-  startAtUTC: string;
-  endAtUTC: string;
-  pricePaise: number;
-  notes?: string;
-  holdMinutes?: number;
-  now?: Date;
-}): Promise<CreateHoldResult> {
+export async function createTemporaryHold(params: CreateHoldParams): Promise<CreateHoldResult> {
   await acquireLock();
 
   try {
@@ -136,6 +129,21 @@ export async function createTemporaryHold(params: {
     const holdMinutes = params.holdMinutes || 10;
     const expiresAt = new Date(now.getTime() + holdMinutes * 60 * 1000).toISOString();
 
+    const paymentMode = params.paymentMode || 'token_advance';
+    let advancePaise = params.advanceAmountPaise;
+    let balancePaise = 0;
+
+    if (paymentMode === 'token_advance') {
+      // Default to ₹200 (20,000 paise) token advance or customized amount
+      advancePaise = advancePaise !== undefined ? advancePaise : 20000;
+      balancePaise = Math.max(0, params.pricePaise - advancePaise);
+    } else {
+      advancePaise = params.pricePaise;
+      balancePaise = 0;
+    }
+
+    const checkInOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
     const newHold: Booking = {
       id: `hold-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       court_id: params.courtId,
@@ -146,6 +154,13 @@ export async function createTemporaryHold(params: {
       status: 'held',
       hold_expires_at: expiresAt,
       price_paise: params.pricePaise,
+      payment_mode: paymentMode,
+      advance_amount_paise: advancePaise,
+      balance_amount_paise: balancePaise,
+      balance_status: 'unpaid',
+      balance_collected_at: null,
+      balance_collected_by: null,
+      check_in_otp: checkInOtp,
       cancel_reason: null,
       notes: params.notes || null,
       created_at: now.toISOString(),
@@ -158,6 +173,7 @@ export async function createTemporaryHold(params: {
     releaseLock();
   }
 }
+
 
 // 3. Explicit Hold Release (When user clicks "Release Slot" or abandons checkout)
 export function releaseHold(holdId: string): boolean {
@@ -187,9 +203,40 @@ export function getBookingById(id: string): Booking | null {
   return activeBookingsList.find((b) => b.id === id) || null;
 }
 
+// 4.c Collect remaining balance at venue (Cash / Venue UPI)
+export function collectVenueBalance(params: {
+  bookingId: string;
+  method: 'cash' | 'venue_upi';
+  attendantId?: string;
+}): { success: boolean; booking?: Booking; error?: string } {
+  const booking = activeBookingsList.find((b) => b.id === params.bookingId);
+  if (!booking) {
+    return { success: false, error: 'Booking not found' };
+  }
+
+  if (booking.status !== 'confirmed') {
+    return { success: false, error: `Cannot collect balance on booking with status: ${booking.status}` };
+  }
+
+  const now = new Date().toISOString();
+  booking.balance_status = params.method === 'cash' ? 'collected_cash' : 'collected_venue_upi';
+  booking.balance_collected_at = now;
+  booking.balance_collected_by = params.attendantId || 'attendant-gate-01';
+  booking.status = 'completed';
+  booking.updated_at = now;
+
+  return { success: true, booking };
+}
+
+
 // 5. Get User Bookings (Player Booking History)
 export function getUserBookings(playerId: string): Booking[] {
   return activeBookingsList.filter((b) => b.player_id === playerId);
+}
+
+// 5.b Get Bookings for Court (Owner Venue Schedule)
+export function getBookingsForCourt(courtId: string): Booking[] {
+  return activeBookingsList.filter((b) => b.court_id === courtId);
 }
 
 // 6. Cancel a booking

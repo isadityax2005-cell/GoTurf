@@ -4,7 +4,7 @@ import { createPaymentOrder } from '@/lib/engine/payment-service';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { holdId, playerId } = body;
+    const { holdId, playerId, paymentMode } = body;
 
     if (!holdId) {
       return NextResponse.json(
@@ -13,7 +13,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await createPaymentOrder({ holdId, playerId });
+    const result = await createPaymentOrder({ holdId, playerId, paymentMode });
+
 
     if (!result.success) {
       return NextResponse.json(

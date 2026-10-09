@@ -12,7 +12,8 @@
     "verify:phase3": "tsx scripts/verify-phase3-listings.ts",
     "verify:phase4": "tsx scripts/verify-phase4-slots.ts",
     "verify:phase5": "tsx scripts/verify-phase5-concurrency-race.ts",
-    "verify:phase6": "tsx scripts/verify-phase6-payments.ts"
+    "verify:phase6": "tsx scripts/verify-phase6-payments.ts",
+    "verify:phase7": "tsx scripts/verify-phase7-token-advance.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -14,6 +14,10 @@ interface UserBooking {
   priceFormatted: string;
   status: 'confirmed' | 'cancelled' | 'completed';
   canCancel: boolean;
+  pin?: string;
+  paymentMode?: 'token_advance' | 'full_online';
+  paidOnline?: string;
+  balanceDue?: string;
 }
 
 export default function MyBookingsPage() {
@@ -29,6 +33,10 @@ export default function MyBookingsPage() {
       priceFormatted: '₹1,845',
       status: 'confirmed',
       canCancel: true,
+      pin: '4821',
+      paymentMode: 'token_advance',
+      paidOnline: '₹245',
+      balanceDue: '₹1,600',
     },
     {
       id: 'GT-BK-7432',
@@ -41,6 +49,10 @@ export default function MyBookingsPage() {
       priceFormatted: '₹1,245',
       status: 'completed',
       canCancel: false,
+      pin: '8392',
+      paymentMode: 'full_online',
+      paidOnline: '₹1,245',
+      balanceDue: '₹0',
     },
   ]);
 
@@ -115,9 +127,26 @@ export default function MyBookingsPage() {
                 <p className="text-xs text-neutral-400 mt-0.5">
                   {booking.courtName} &bull; 📍 {booking.locality}
                 </p>
-                <p className="text-xs text-emerald-400 font-medium mt-2">
+                <p className="text-xs text-emerald-400 font-medium mt-1.5">
                   🗓️ {booking.dateStr} &bull; 🕒 {booking.timeWindowIST}
                 </p>
+
+                {booking.pin && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-neutral-800/60">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-neutral-800 text-emerald-400 border border-neutral-700">
+                      Match PIN: {booking.pin}
+                    </span>
+                    {booking.balanceDue && booking.balanceDue !== '₹0' ? (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        Paid Online: {booking.paidOnline} &bull; Due at Venue: {booking.balanceDue}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        100% Pre-Paid Online
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col sm:items-end justify-between gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-800">

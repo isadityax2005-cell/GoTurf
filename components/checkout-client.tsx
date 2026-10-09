@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Turf, Booking } from '@/types/database';
+import type { Turf, Booking, PaymentMode } from '@/types/database';
 import { formatTimeIST } from '@/lib/engine/slot-calculator';
 
 interface CheckoutClientProps {
@@ -27,17 +27,24 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Player selected payment mode (Token Advance default for local sports teams)
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('token_advance');
+
   // Player Form
   const [playerName, setPlayerName] = useState('Karan Verma');
   const [playerPhone, setPlayerPhone] = useState('+91 98200 11223');
   const [playerEmail, setPlayerEmail] = useState('karan.verma@example.com');
 
   // Price calculations
-  const baseCourtPaise = holdBooking?.price_paise || 180000;
-  const basePrice = baseCourtPaise / 100;
+  const slotTotalPaise = holdBooking?.price_paise || 180000;
+  const slotTotal = slotTotalPaise / 100;
+  const tokenAdvancePaise = holdBooking?.advance_amount_paise || 20000; // ₹200
+  const tokenAdvance = tokenAdvancePaise / 100;
   const platformFee = 45;
-  const totalAmount = basePrice + platformFee;
-  const totalPaise = baseCourtPaise + 4500;
+
+  const venueBalancePaise = paymentMode === 'token_advance' ? Math.max(0, slotTotalPaise - tokenAdvancePaise) : 0;
+  const venueBalance = venueBalancePaise / 100;
+  const onlinePayable = paymentMode === 'token_advance' ? tokenAdvance + platformFee : slotTotal + platformFee;
 
   // 1. Fetch server-authoritative hold status & initialize absolute clock
   const fetchHoldStatus = useCallback(async () => {
@@ -51,7 +58,11 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
         const booking: Booking = data.booking;
         setHoldBooking(booking);
 
-        if (booking.status === 'confirmed') {
+        if (booking.payment_mode) {
+          setPaymentMode(booking.payment_mode);
+        }
+
+        if (booking.status === 'confirmed' || booking.status === 'completed') {
           setPaymentSuccess(true);
           return;
         }
@@ -72,7 +83,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
         }
       }
     } catch {
-      // Fallback to local default if offline or demo hold
+      // Fallback
     }
   }, [holdId]);
 
@@ -142,6 +153,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
         body: JSON.stringify({
           holdId,
           playerId: 'player-demo-current',
+          paymentMode,
         }),
       });
 
@@ -158,7 +170,6 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       const { orderId, amountPaise } = orderData.order;
 
       // Step B: Trigger Webhook-Verified Payment (Simulated test capture)
-      // Generates a verified gateway webhook callback to /api/webhooks/payment
       const webhookPayload = {
         entity: 'event',
         event: 'order.paid',
@@ -197,6 +208,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
       const webhookData = await webhookRes.json();
       if (webhookRes.ok && webhookData.success) {
+        await fetchHoldStatus();
         setPaymentSuccess(true);
       } else {
         setPaymentError(webhookData.error || 'Payment verification failed at gateway');
@@ -225,7 +237,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-xs text-neutral-400">
-            {paymentSuccess ? 'Payment Confirmed' : isExpired ? 'Hold Expired' : 'Hold Active'}
+            {paymentSuccess ? 'Slot Confirmed' : isExpired ? 'Hold Expired' : 'Hold Active'}
           </span>
           <span
             className={`h-2 w-2 rounded-full ${
@@ -237,34 +249,66 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
       {/* Main Container */}
       <div className="max-w-2xl w-full mx-auto px-6 py-8 flex-1">
-        {/* Payment Confirmed State */}
+        {/* Payment Confirmed State / Digital Match Pass */}
         {paymentSuccess ? (
           <div className="p-8 rounded-3xl bg-neutral-900/60 border border-emerald-500/30 text-center animate-in zoom-in-95 duration-200">
             <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-3xl font-black">
               ✓
             </div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 inline-block mb-2">
-              Slot Guaranteed &bull; Zero Double-Bookings
+              Slot Reserved &bull; Zero Double-Bookings Guarantee
             </span>
             <h1 className="text-2xl font-black text-white tracking-tight mb-2">
-              Booking Confirmed!
+              Match Slot Locked!
             </h1>
             <p className="text-xs text-neutral-400 max-w-md mx-auto mb-6">
-              Your ₹{totalAmount.toLocaleString('en-IN')} payment was verified via server webhook. Your digital match pass is live with directions and rules.
+              Your online payment was verified by signed webhook. Show this Match Pass to the turf manager when your squad arrives.
             </p>
 
-            <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800/80 max-w-sm mx-auto mb-6 text-left text-xs space-y-1.5">
+            {/* Match Pass Card */}
+            <div className="p-5 rounded-2xl bg-neutral-950 border border-neutral-800/80 max-w-md mx-auto mb-6 text-left text-xs space-y-2.5 shadow-xl">
+              <div className="flex justify-between items-center pb-2 border-b border-neutral-800">
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Venue</span>
+                  <p className="text-sm font-bold text-white">{turf.name}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Match PIN</span>
+                  <p className="text-base font-black font-mono text-emerald-400 tracking-wider">
+                    {holdBooking?.check_in_otp || '4821'}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex justify-between">
-                <span className="text-neutral-400">Venue:</span>
-                <span className="text-white font-semibold">{turf.name}</span>
+                <span className="text-neutral-400">Match Time:</span>
+                <span className="text-emerald-400 font-bold">{matchTimeLabel}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-400">Time:</span>
-                <span className="text-emerald-400 font-bold">{matchTimeLabel}</span>
+                <span className="text-neutral-400">Court / Arena:</span>
+                <span className="text-white font-medium">{court?.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-400">Player:</span>
                 <span className="text-white font-medium">{playerName}</span>
+              </div>
+
+              <div className="pt-2 border-t border-neutral-800">
+                <div className="flex justify-between text-neutral-300">
+                  <span>Paid Online (Advance + Fee):</span>
+                  <span className="font-semibold text-white">₹{onlinePayable}</span>
+                </div>
+                {paymentMode === 'token_advance' && venueBalance > 0 ? (
+                  <div className="flex justify-between text-amber-400 font-bold pt-1">
+                    <span>Balance Due at Turf (Cash/UPI):</span>
+                    <span>₹{venueBalance}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between text-emerald-400 font-bold pt-1">
+                    <span>Balance Due at Turf:</span>
+                    <span>₹0 (100% Pre-paid)</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -273,7 +317,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 href="/bookings"
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-500 text-black text-xs font-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
               >
-                View My Match Pass &rarr;
+                View in My Bookings &rarr;
               </Link>
               <Link
                 href="/turfs"
@@ -351,7 +395,69 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Booking Summary Card */}
+                {/* Payment Option Selector (Token Advance vs Full Prepayment) */}
+                <div className="p-5 rounded-3xl bg-neutral-900/60 border border-neutral-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white uppercase tracking-wider">
+                      Choose How You Want to Pay
+                    </label>
+                    <span className="text-[10px] text-neutral-400">Mumbai Squad Friendly</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Option 1: Token Advance */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMode('token_advance')}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMode === 'token_advance'
+                          ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-xs text-white">Token Advance</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            Recommended 🏏
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 leading-snug">
+                          Pay <strong className="text-emerald-400 font-bold">₹{tokenAdvance + platformFee}</strong> online now to lock slot.
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
+                        Pay remaining <strong className="text-white">₹{slotTotal - tokenAdvance}</strong> at turf gate (Cash/UPI)
+                      </p>
+                    </button>
+
+                    {/* Option 2: Full Prepayment */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMode('full_online')}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMode === 'full_online'
+                          ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-xs text-white">100% Online</span>
+                          <span className="text-[9px] font-semibold text-neutral-500">Zero Cash</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 leading-snug">
+                          Pay full <strong className="text-emerald-400 font-bold">₹{slotTotal + platformFee}</strong> online now.
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
+                        Walk straight onto the pitch &bull; ₹0 due at venue
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Match Details Card */}
                 <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800">
                   <h2 className="text-base font-bold text-white mb-4">Match Details</h2>
                   <div className="space-y-2 text-xs">
@@ -410,8 +516,8 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800 space-y-3 text-xs">
                   <h2 className="text-base font-bold text-white mb-2">Price Breakdown</h2>
                   <div className="flex justify-between text-neutral-300">
-                    <span>Slot Fee (60 Mins)</span>
-                    <span>₹{basePrice.toLocaleString('en-IN')}</span>
+                    <span>Slot Value (60 Mins)</span>
+                    <span>₹{slotTotal.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-neutral-300">
@@ -424,13 +530,22 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       <span>₹{platformFee}</span>
                     </div>
                     <p className="text-[11px] text-neutral-500 leading-relaxed">
-                      Covers live slot locking, instant UPI payment gateway handling, and 100% automated refund protection. (Payment Gateway & 18% GST included).
+                      Covers live database locking, instant UPI payment handling, and 100% automated refund protection.
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-neutral-800 flex justify-between items-center text-sm font-bold text-white">
-                    <span>Total Amount Payable</span>
-                    <span className="text-emerald-400 text-lg">₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <div className="flex justify-between items-center text-sm font-bold text-white">
+                      <span>Total Amount to Pay Now</span>
+                      <span className="text-emerald-400 text-lg">₹{onlinePayable.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    {paymentMode === 'token_advance' && venueBalance > 0 && (
+                      <div className="flex justify-between items-center text-xs text-amber-300 font-semibold p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <span>Remaining Balance Due at Venue:</span>
+                        <span>₹{venueBalance.toLocaleString('en-IN')} (Cash/UPI)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -445,11 +560,14 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     {isPaying ? (
                       <>
                         <span className="inline-block h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                        <span>Verifying & Processing Payment...</span>
+                        <span>Verifying & Locking Slot...</span>
                       </>
                     ) : (
                       <>
-                        <span>Pay ₹{totalAmount.toLocaleString('en-IN')} via UPI / Card</span>
+                        <span>
+                          Pay ₹{onlinePayable.toLocaleString('en-IN')}{' '}
+                          {paymentMode === 'token_advance' ? 'Token Advance' : 'Full Payment'} via UPI
+                        </span>
                         <span>&rarr;</span>
                       </>
                     )}

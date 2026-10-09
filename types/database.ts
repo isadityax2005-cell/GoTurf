@@ -10,6 +10,8 @@ export type BookingStatus = 'held' | 'confirmed' | 'cancelled' | 'expired' | 'co
 export type BookingType = 'player' | 'owner_block';
 export type DayType = 'weekday' | 'weekend' | 'holiday';
 export type PaymentStatus = 'created' | 'captured' | 'failed' | 'refunded';
+export type PaymentMode = 'full_online' | 'token_advance';
+export type BalanceStatus = 'unpaid' | 'collected_cash' | 'collected_venue_upi' | 'waived';
 
 export interface Profile {
   id: string;
@@ -60,6 +62,8 @@ export interface Court {
   surface: string | null;
   slot_minutes: number;
   is_active: boolean;
+  allows_advance_booking?: boolean;
+  min_advance_paise?: number;
   created_at: string;
   updated_at: string;
   opening_hours?: OpeningHours[];
@@ -103,6 +107,13 @@ export interface Booking {
   status: BookingStatus;
   hold_expires_at: string | null;
   price_paise: number;
+  payment_mode?: PaymentMode;
+  advance_amount_paise?: number;
+  balance_amount_paise?: number;
+  balance_status?: BalanceStatus;
+  balance_collected_at?: string | null;
+  balance_collected_by?: string | null;
+  check_in_otp?: string | null;
   cancel_reason: string | null;
   notes: string | null;
   created_at: string;
@@ -110,6 +121,7 @@ export interface Booking {
   court?: Court;
   player?: Profile;
 }
+
 
 export interface Payment {
   id: string;

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { courtId, playerId, startAtUTC, endAtUTC, pricePaise, notes } = body;
+    const { courtId, playerId, startAtUTC, endAtUTC, pricePaise, notes, paymentMode, advanceAmountPaise } = body;
 
     if (!courtId || !startAtUTC || !endAtUTC) {
       return NextResponse.json(
@@ -40,7 +40,10 @@ export async function POST(request: Request) {
       endAtUTC,
       pricePaise: pricePaise || 120000,
       notes,
+      paymentMode,
+      advanceAmountPaise,
     });
+
 
     if (!result.success) {
       return NextResponse.json(
