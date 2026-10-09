@@ -428,9 +428,9 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black pb-32">
+    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black pb-32">
       {/* Top Navbar */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40 bg-neutral-950/80">
+      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40 bg-[#030303]/80">
         <Link
           href={`/turfs/${turf.slug}`}
           className="flex items-center gap-2 text-xs text-neutral-400 hover:text-white"
@@ -438,7 +438,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
           <span>&larr;</span>
           <span>Back to {turf.name}</span>
         </Link>
-        <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+        <span className="text-[10px] uppercase font-bold tracking-wider text-[#F9B318] bg-[#5245F8]/15 px-2 py-0.5 rounded-full border border-[#5245F8]/40">
           Live Slot Grid
         </span>
       </header>
@@ -488,7 +488,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   }}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     selectedCourt?.id === court.id
-                      ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                      ? 'bg-[#5245F8] text-white shadow-lg shadow-[#5245F8]/30'
                       : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700'
                   }`}
                 >
@@ -534,7 +534,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Match Duration:</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#5245F8]/15 text-[#F9B318] border border-[#5245F8]/40">
                   Continuous Lock
                 </span>
               </div>
@@ -549,7 +549,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 onClick={() => handleDurationModeChange(1)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   durationMode === 1
-                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    ? 'bg-[#5245F8] text-white shadow-md shadow-[#5245F8]/30'
                     : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                 }`}
               >
@@ -560,7 +560,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 onClick={() => handleDurationModeChange(2)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   durationMode === 2
-                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    ? 'bg-[#5245F8] text-white shadow-md shadow-[#5245F8]/30'
                     : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                 }`}
               >
@@ -571,7 +571,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 onClick={() => handleDurationModeChange(3)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   durationMode === 3
-                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                    ? 'bg-[#5245F8] text-white shadow-md shadow-[#5245F8]/30'
                     : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                 }`}
               >
@@ -582,8 +582,8 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 onClick={() => handleDurationModeChange('custom')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   durationMode === 'custom'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-black shadow-md shadow-emerald-500/20 font-black'
-                    : 'bg-neutral-900 text-emerald-400 hover:text-white border border-emerald-500/30'
+                    ? 'bg-gradient-to-r from-[#5245F8] to-[#7c3aed] text-white shadow-md shadow-[#5245F8]/30 font-black'
+                    : 'bg-[#0c0c14] text-[#F9B318] hover:text-white border border-[#F9B318]/40'
                 }`}
               >
                 <span>⚡ Flexible (3+ Hours)</span>
@@ -620,9 +620,9 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                       setCustomSelectedIndices(indices);
                     }
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-300 hover:border-emerald-500/50 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-[#030303] border border-neutral-800 text-[11px] text-neutral-300 hover:border-[#5245F8]/50 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span className="text-emerald-400 font-bold">{blk.durationHours}H Open</span>
+                  <span className="text-[#F9B318] font-bold">{blk.durationHours}H Open</span>
                   <span>{blk.startTimeIST} – {blk.endTimeIST}</span>
                 </button>
               ))}
@@ -631,7 +631,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
 
           {/* Custom mode helper text */}
           {durationMode === 'custom' && (
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center justify-between">
+            <div className="p-3 rounded-2xl bg-[#5245F8]/10 border border-[#5245F8]/30 text-neutral-200 text-xs flex items-center justify-between">
               <span>
                 💡 <strong>Multi-Select Active:</strong> Tap consecutive slots below to chain 3, 4, or 5+ hours together into a single booking!
               </span>
@@ -642,7 +642,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                     setCustomSelectedIndices([]);
                     setSelectedBooking(null);
                   }}
-                  className="text-emerald-400 hover:underline font-bold text-[11px] ml-3 cursor-pointer"
+                  className="text-[#F9B318] hover:underline font-bold text-[11px] ml-3 cursor-pointer"
                 >
                   Reset Selection
                 </button>
@@ -766,13 +766,13 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-neutral-900/95 border-t border-neutral-800 backdrop-blur-xl z-40 animate-in slide-in-from-bottom duration-200">
           <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold">
+              <div className="h-10 w-10 rounded-xl bg-[#5245F8]/15 border border-[#5245F8]/40 text-[#F9B318] flex items-center justify-center text-lg font-bold">
                 ✓
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
                   {selectedBooking.startTimeIST} – {selectedBooking.endTimeIST}{' '}
-                  <span className="text-xs font-normal text-emerald-400">
+                  <span className="text-xs font-normal text-[#F9B318]">
                     ({selectedBooking.durationHours} {selectedBooking.durationHours === 1 ? 'Hour' : 'Hours Continuous'})
                   </span>
                 </p>
@@ -795,7 +795,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               <button
                 disabled={isHolding}
                 onClick={handleProceedToCheckout}
-                className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-500 text-black text-xs font-black hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-[#5245F8] hover:bg-[#4335e6] text-white text-xs font-black disabled:opacity-50 transition-all shadow-lg shadow-[#5245F8]/30 text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isHolding ? (
                   <>
@@ -856,7 +856,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                   Available Continuous {suggestionModal.requestedDurationHours}-Hour Slots ({selectedCourt?.name})
                 </h4>
-                <span className="text-[10px] text-emerald-400 font-semibold">
+                <span className="text-[10px] text-[#F9B318] font-semibold">
                   {suggestionModal.availableWindows.length} Options
                 </span>
               </div>
@@ -866,7 +866,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   {suggestionModal.availableWindows.map((win) => (
                     <div
                       key={win.startAtUTC}
-                      className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 hover:border-emerald-500/40 flex items-center justify-between gap-3 transition-colors"
+                      className="p-3 rounded-2xl bg-[#030303] border border-neutral-800 hover:border-[#5245F8]/50 flex items-center justify-between gap-3 transition-colors"
                     >
                       <div>
                         <div className="flex items-center gap-2">
@@ -879,7 +879,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-emerald-400 font-medium mt-0.5">
+                        <p className="text-[11px] text-[#F9B318] font-medium mt-0.5">
                           {win.priceFormatted} &bull; {win.durationHours} Hours Continuous
                         </p>
                       </div>
@@ -900,7 +900,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                           });
                           setSuggestionModal((prev) => ({ ...prev, isOpen: false }));
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1.5 rounded-xl bg-[#5245F8] hover:bg-[#4335e6] text-white text-xs font-black transition-colors shadow-md shadow-[#5245F8]/30 cursor-pointer whitespace-nowrap"
                       >
                         Select Slot &rarr;
                       </button>
@@ -908,10 +908,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   ))}
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800/60 text-xs text-neutral-400">
+                <div className="p-3 rounded-xl bg-[#030303] border border-neutral-800/60 text-xs text-neutral-400">
                   <p>No continuous {suggestionModal.requestedDurationHours}-hour slots remaining on this court today.</p>
                   {suggestionModal.continuousBlocks.length > 0 && (
-                    <p className="text-[11px] text-emerald-400 mt-1">
+                    <p className="text-[11px] text-[#F9B318] mt-1">
                       💡 Longest available block on this court: <strong>{suggestionModal.continuousBlocks[0].durationHours} Hours</strong> ({suggestionModal.continuousBlocks[0].startTimeIST} – {suggestionModal.continuousBlocks[0].endTimeIST}).
                     </p>
                   )}
@@ -933,12 +933,12 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                       return (
                         <div
                           key={court.id}
-                          className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-3"
+                          className="p-3.5 rounded-2xl bg-[#5245F8]/10 border border-[#5245F8]/30 flex items-center justify-between gap-3"
                         >
                           <div>
                             <p className="text-xs font-bold text-white">{court.name}</p>
                             <p className="text-[11px] text-neutral-400 mt-0.5">
-                              Has <strong className="text-emerald-400">{firstWin.startTimeIST} – {firstWin.endTimeIST}</strong> ({firstWin.priceFormatted}) open!
+                              Has <strong className="text-[#F9B318]">{firstWin.startTimeIST} – {firstWin.endTimeIST}</strong> ({firstWin.priceFormatted}) open!
                             </p>
                           </div>
                           <button
@@ -972,12 +972,12 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                       return (
                         <div
                           key={court.id}
-                          className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between gap-3"
+                          className="p-3.5 rounded-2xl bg-[#030303] border border-neutral-800 flex items-center justify-between gap-3"
                         >
                           <div>
                             <p className="text-xs font-bold text-white">{court.name}</p>
                             <p className="text-[11px] text-neutral-400 mt-0.5">
-                              Open for <strong className="text-emerald-400">{longestBlock.durationHours} Hours</strong> ({longestBlock.startTimeIST} – {longestBlock.endTimeIST})
+                              Open for <strong className="text-[#F9B318]">{longestBlock.durationHours} Hours</strong> ({longestBlock.startTimeIST} – {longestBlock.endTimeIST})
                             </p>
                           </div>
                           <button
@@ -1061,10 +1061,10 @@ function SlotCardUnified({
         onClick={isAvailable ? onClick : onUnavailableClick}
         className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
           isCustomSelected
-            ? 'bg-emerald-500/20 border-emerald-400 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+            ? 'bg-[#5245F8]/25 border-[#5245F8] shadow-md shadow-[#5245F8]/30 ring-2 ring-[#5245F8]'
             : isAvailable
-            ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
-            : 'bg-neutral-950/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
+            ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-[#5245F8]/50 hover:bg-neutral-900'
+            : 'bg-[#030303]/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
         }`}
       >
         <div>
@@ -1073,7 +1073,7 @@ function SlotCardUnified({
               {slot.startTimeIST}
             </span>
             {isCustomSelected ? (
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500 text-black">
+              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#F9B318] text-black font-black">
                 ✓ Added
               </span>
             ) : (
@@ -1092,7 +1092,7 @@ function SlotCardUnified({
         <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">
           {isAvailable ? (
             <>
-              <span className="text-xs font-bold text-emerald-400">{slot.priceFormatted}</span>
+              <span className="text-xs font-bold text-[#F9B318]">{slot.priceFormatted}</span>
               <span className="text-[9px] font-semibold text-neutral-500">1 Hour</span>
             </>
           ) : (
@@ -1118,10 +1118,10 @@ function SlotCardUnified({
         onClick={isAvailable ? onClick : onUnavailableClick}
         className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
           isPresetSelected
-            ? 'bg-emerald-500/15 border-emerald-400 shadow-md shadow-emerald-500/20'
+            ? 'bg-[#5245F8]/25 border-[#5245F8] shadow-md shadow-[#5245F8]/30 ring-2 ring-[#5245F8]'
             : isAvailable
-            ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
-            : 'bg-neutral-950/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
+            ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-[#5245F8]/50 hover:bg-neutral-900'
+            : 'bg-[#030303]/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
         }`}
       >
         <div>
@@ -1141,7 +1141,7 @@ function SlotCardUnified({
         <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">
           {isAvailable ? (
             <>
-              <span className="text-xs font-bold text-emerald-400">{slot.priceFormatted}</span>
+              <span className="text-xs font-bold text-[#F9B318]">{slot.priceFormatted}</span>
               <span className="text-[9px] font-semibold text-neutral-500">Free</span>
             </>
           ) : (
@@ -1173,10 +1173,10 @@ function SlotCardUnified({
       onClick={allAvailable ? onClick : onUnavailableClick}
       className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all relative cursor-pointer ${
         isPresetSelected
-          ? 'bg-emerald-500/15 border-emerald-400 shadow-md shadow-emerald-500/20'
+          ? 'bg-[#5245F8]/25 border-[#5245F8] shadow-md shadow-[#5245F8]/30 ring-2 ring-[#5245F8]'
           : allAvailable
-          ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-emerald-500/40 hover:bg-neutral-900'
-          : 'bg-neutral-950/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
+          ? 'bg-neutral-900/50 border-neutral-800/90 hover:border-[#5245F8]/50 hover:bg-neutral-900'
+          : 'bg-[#030303]/40 border-neutral-900 opacity-60 hover:border-amber-500/40'
       }`}
     >
       <div>
@@ -1184,7 +1184,7 @@ function SlotCardUnified({
           <span suppressHydrationWarning className="text-xs font-bold text-white tracking-tight">
             {slot.startTimeIST}
           </span>
-          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-emerald-400 border border-neutral-700">
+          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-[#F9B318] border border-neutral-700">
             {requiredHours} Hours
           </span>
         </div>
@@ -1196,8 +1196,8 @@ function SlotCardUnified({
       <div className="mt-3 pt-2 border-t border-neutral-800/40 flex justify-between items-center">
         {allAvailable ? (
           <>
-            <span className="text-xs font-bold text-emerald-400">{combinedPriceFormatted}</span>
-            <span className="text-[9px] font-semibold text-emerald-500">{requiredHours}H Free</span>
+            <span className="text-xs font-bold text-[#F9B318]">{combinedPriceFormatted}</span>
+            <span className="text-[9px] font-semibold text-[#F9B318]">{requiredHours}H Free</span>
           </>
         ) : (
           <div className="flex items-center justify-between w-full">

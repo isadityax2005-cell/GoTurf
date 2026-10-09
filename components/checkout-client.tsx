@@ -231,9 +231,9 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
   const durationLabel = durationHours > 1 ? `${durationHours} Hours (${durationMins}m)` : `${durationMins} Mins`;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black">
       {/* Top Header */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-neutral-950/80">
+      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#030303]/80">
         <Link
           href={`/turfs/${turf.slug}`}
           className="flex items-center gap-2 text-xs text-neutral-400 hover:text-white"
@@ -247,7 +247,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
           </span>
           <span
             className={`h-2 w-2 rounded-full ${
-              paymentSuccess ? 'bg-emerald-400' : isExpired ? 'bg-rose-400' : 'bg-amber-400 animate-pulse'
+              paymentSuccess ? 'bg-[#5245F8]' : isExpired ? 'bg-rose-400' : 'bg-amber-400 animate-pulse'
             }`}
           />
         </div>
@@ -257,11 +257,11 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       <div className="max-w-2xl w-full mx-auto px-6 py-8 flex-1">
         {/* Payment Confirmed State / Digital Match Pass */}
         {paymentSuccess ? (
-          <div className="p-8 rounded-3xl bg-neutral-900/60 border border-emerald-500/30 text-center animate-in zoom-in-95 duration-200">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-3xl font-black">
+          <div className="p-8 rounded-3xl bg-neutral-900/60 border border-[#5245F8]/40 text-center animate-in zoom-in-95 duration-200">
+            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-[#5245F8]/20 border border-[#5245F8]/40 text-[#F9B318] flex items-center justify-center text-3xl font-black">
               ✓
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 inline-block mb-2">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#F9B318] px-3 py-1 rounded-full bg-[#5245F8]/15 border border-[#5245F8]/40 inline-block mb-2">
               Slot Reserved &bull; Zero Double-Bookings Guarantee
             </span>
             <h1 className="text-2xl font-black text-white tracking-tight mb-2">
@@ -272,7 +272,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             </p>
 
             {/* Match Pass Card */}
-            <div className="p-5 rounded-2xl bg-neutral-950 border border-neutral-800/80 max-w-md mx-auto mb-6 text-left text-xs space-y-2.5 shadow-xl">
+            <div className="p-5 rounded-2xl bg-[#030303] border border-neutral-800/80 max-w-md mx-auto mb-6 text-left text-xs space-y-2.5 shadow-xl">
               <div className="flex justify-between items-center pb-2 border-b border-neutral-800">
                 <div>
                   <span className="text-[10px] text-neutral-400 uppercase font-semibold">Venue</span>
@@ -280,7 +280,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-neutral-400 uppercase font-semibold">Match PIN</span>
-                  <p className="text-base font-black font-mono text-emerald-400 tracking-wider">
+                  <p className="text-base font-black font-mono text-[#F9B318] tracking-wider">
                     {holdBooking?.check_in_otp || '4821'}
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
               <div className="flex justify-between">
                 <span className="text-neutral-400">Match Time:</span>
-                <span className="text-emerald-400 font-bold">{matchTimeLabel}</span>
+                <span className="text-[#F9B318] font-bold">{matchTimeLabel}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-400">Court / Arena:</span>
@@ -310,7 +310,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     <span>₹{venueBalance}</span>
                   </div>
                 ) : (
-                  <div className="flex justify-between text-emerald-400 font-bold pt-1">
+                  <div className="flex justify-between text-[#F9B318] font-bold pt-1">
                     <span>Balance Due at Turf:</span>
                     <span>₹0 (100% Pre-paid)</span>
                   </div>
@@ -321,7 +321,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/bookings"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-500 text-black text-xs font-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#5245F8] text-white text-xs font-black hover:bg-[#4335e6] transition-all shadow-lg shadow-[#5245F8]/30"
               >
                 View in My Bookings &rarr;
               </Link>
@@ -362,7 +362,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 <span
                   suppressHydrationWarning
                   className={`text-2xl font-black font-mono tracking-tight ${
-                    isExpired ? 'text-rose-400' : 'text-emerald-400'
+                    isExpired ? 'text-rose-400' : 'text-[#F9B318]'
                   }`}
                 >
                   {formatTimer(secondsRemaining)}
@@ -417,19 +417,19 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       onClick={() => setPaymentMode('token_advance')}
                       className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                         paymentMode === 'token_advance'
-                          ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-[#5245F8]/15 border-[#5245F8] text-white shadow-lg shadow-[#5245F8]/25'
+                          : 'bg-[#030303] border-neutral-800 text-neutral-400 hover:border-neutral-700'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-xs text-white">Token Advance</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#F9B318] border border-[#5245F8]/40">
                             Recommended 🏏
                           </span>
                         </div>
                         <p className="text-[11px] text-neutral-400 leading-snug">
-                          Pay <strong className="text-emerald-400 font-bold">₹{tokenAdvance + platformFee}</strong> online now to lock slot.
+                          Pay <strong className="text-[#F9B318] font-bold">₹{tokenAdvance + platformFee}</strong> online now to lock slot.
                         </p>
                       </div>
                       <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
@@ -443,8 +443,8 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       onClick={() => setPaymentMode('full_online')}
                       className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                         paymentMode === 'full_online'
-                          ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-[#5245F8]/15 border-[#5245F8] text-white shadow-lg shadow-[#5245F8]/25'
+                          : 'bg-[#030303] border-neutral-800 text-neutral-400 hover:border-neutral-700'
                       }`}
                     >
                       <div>
@@ -453,7 +453,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                           <span className="text-[9px] font-semibold text-neutral-500">Zero Cash</span>
                         </div>
                         <p className="text-[11px] text-neutral-400 leading-snug">
-                          Pay full <strong className="text-emerald-400 font-bold">₹{slotTotal + platformFee}</strong> online now.
+                          Pay full <strong className="text-[#F9B318] font-bold">₹{slotTotal + platformFee}</strong> online now.
                         </p>
                       </div>
                       <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
@@ -477,7 +477,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     </div>
                     <div className="flex justify-between py-1.5 border-b border-neutral-800/60">
                       <span className="text-neutral-400">Time Window (IST)</span>
-                      <span className="font-semibold text-emerald-400">{matchTimeLabel}</span>
+                      <span className="font-semibold text-[#F9B318]">{matchTimeLabel}</span>
                     </div>
                     <div className="flex justify-between py-1.5">
                       <span className="text-neutral-400">Cancellation Rule</span>
@@ -495,7 +495,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       type="text"
                       value={playerName}
                       onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
                     />
                   </div>
                   <div>
@@ -504,7 +504,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       type="tel"
                       value={playerPhone}
                       onChange={(e) => setPlayerPhone(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
                     />
                   </div>
                   <div>
@@ -513,7 +513,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       type="email"
                       value={playerEmail}
                       onChange={(e) => setPlayerEmail(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
                     />
                   </div>
                 </div>
@@ -529,7 +529,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     <div className="flex justify-between text-neutral-300">
                       <span className="flex items-center gap-1.5">
                         <span>Platform Convenience Fee</span>
-                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                        <span className="text-[10px] text-[#F9B318] bg-[#5245F8]/15 px-1.5 py-0.5 rounded border border-[#5245F8]/40">
                           Verified Protection
                         </span>
                       </span>
@@ -543,7 +543,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                   <div className="pt-3 border-t border-neutral-800 space-y-2">
                     <div className="flex justify-between items-center text-sm font-bold text-white">
                       <span>Total Amount to Pay Now</span>
-                      <span className="text-emerald-400 text-lg">₹{onlinePayable.toLocaleString('en-IN')}</span>
+                      <span className="text-[#F9B318] text-xl font-black">₹{onlinePayable.toLocaleString('en-IN')}</span>
                     </div>
 
                     {paymentMode === 'token_advance' && venueBalance > 0 && (
@@ -561,7 +561,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     type="button"
                     disabled={isPaying || isExpired}
                     onClick={handleInitiatePayment}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-sm hover:opacity-95 disabled:opacity-50 shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#5245F8] via-[#6366f1] to-[#5245F8] text-white font-black text-sm hover:opacity-95 disabled:opacity-50 shadow-xl shadow-[#5245F8]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isPaying ? (
                       <>
