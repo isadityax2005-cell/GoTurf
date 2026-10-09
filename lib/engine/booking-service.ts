@@ -181,6 +181,12 @@ export function confirmBooking(holdId: string): Booking | null {
   return null;
 }
 
+// 4.b Get booking or hold by ID
+export function getBookingById(id: string): Booking | null {
+  expireStaleHolds();
+  return activeBookingsList.find((b) => b.id === id) || null;
+}
+
 // 5. Get User Bookings (Player Booking History)
 export function getUserBookings(playerId: string): Booking[] {
   return activeBookingsList.filter((b) => b.player_id === playerId);

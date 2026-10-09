@@ -181,7 +181,78 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         </div>
+
+
+        {/* Booking Disputes & Financial Operations */}
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold text-white">Financial Disputes & Booking Refunds</h2>
+              <p className="text-xs text-neutral-400">Issue administrative overrides and automated payment refunds directly to players.</p>
+            </div>
+            <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full font-bold">
+              Gateway Refund Link Active
+            </span>
+          </div>
+
+          <div className="rounded-2xl bg-neutral-900/40 border border-neutral-800 overflow-hidden text-xs">
+            <div className="grid grid-cols-12 bg-neutral-900/80 px-4 py-3 font-semibold text-neutral-400 border-b border-neutral-800">
+              <div className="col-span-3">Booking ID / Player</div>
+              <div className="col-span-3">Venue & Court</div>
+              <div className="col-span-2">Amount Paid</div>
+              <div className="col-span-2">Status</div>
+              <div className="col-span-2 text-right">Admin Action</div>
+            </div>
+
+            <div className="divide-y divide-neutral-800/60">
+              <div className="grid grid-cols-12 px-4 py-3.5 items-center">
+                <div className="col-span-3">
+                  <p className="font-bold text-white">#BKG-9921-MUM</p>
+                  <p className="text-[11px] text-neutral-400">Karan Verma &bull; +91 98200 11223</p>
+                </div>
+                <div className="col-span-3">
+                  <p className="text-white">Bandra Turf Arena</p>
+                  <p className="text-[11px] text-neutral-400">Box Cricket (Court 1)</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-white font-semibold">₹1,845</p>
+                  <p className="text-[10px] text-emerald-400">₹1,800 + ₹45 fee</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Confirmed
+                  </span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <button
+                    onClick={async () => {
+                      const res = await fetch('/api/payments/refund', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          bookingId: 'booking-preseeded-1',
+                          reason: 'Admin dispute override: Court maintenance conflict',
+                          adminOverride: true,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        setNotification('💸 100% Refund (₹1,845) initiated to player UPI source via Razorpay.');
+                      } else {
+                        setNotification(`⚠️ Refund notice: ${data.message}`);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Cancel & Refund
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
 
       {/* Footer */}
       <footer className="border-t border-neutral-800/80 px-6 py-4 text-center text-xs text-neutral-600">

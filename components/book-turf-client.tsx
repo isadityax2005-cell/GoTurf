@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Turf } from '@/types/database';
 import { getActiveBookingsForCourt } from '@/lib/data/bookings';
 import { generateCourtSlots, type SlotGridItem } from '@/lib/engine/slot-calculator';
@@ -13,11 +13,14 @@ interface BookTurfClientProps {
 }
 
 export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientProps) {
+  const router = useRouter();
   const courts = turf.courts || [];
   const searchParams = useSearchParams();
   const courtFromUrl = searchParams.get('court');
   const [selectedCourtId, setSelectedCourtId] = useState(courtFromUrl || initialCourtId || courts[0]?.id || '');
   const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdError, setHoldError] = useState<string | null>(null);
 
   // Generate next 7 selectable dates
   const availableDates = useMemo(() => {
@@ -84,6 +87,40 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     return { morning, afternoon, evening };
   }, [slots]);
 
+  const handleProceedToCheckout = async () => {
+    if (!selectedSlot || !selectedCourt) return;
+    setIsHolding(true);
+    setHoldError(null);
+
+    try {
+      const res = await fetch('/api/bookings/hold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courtId: selectedCourt.id,
+          playerId: 'player-demo-current',
+          startAtUTC: selectedSlot.startAtUTC,
+          endAtUTC: selectedSlot.endAtUTC,
+          pricePaise: selectedSlot.pricePaise,
+          notes: `${selectedSlot.startTimeIST} to ${selectedSlot.endTimeIST} match`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setHoldError(data.error || 'Slot was just taken! Please pick another slot.');
+        setSelectedSlot(null);
+        return;
+      }
+
+      router.push(`/turfs/${turf.slug}/checkout?court=${selectedCourt.id}&holdId=${data.booking.id}`);
+    } catch {
+      setHoldError('Network error while holding slot. Please try again.');
+    } finally {
+      setIsHolding(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black pb-28">
       {/* Top Navbar */}
@@ -102,6 +139,22 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
 
       {/* Main Container */}
       <div className="max-w-4xl w-full mx-auto px-6 py-8 flex-1">
+        {/* Error Alert */}
+        {holdError && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 flex items-center justify-between text-xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚠️</span>
+              <span>{holdError}</span>
+            </div>
+            <button
+              onClick={() => setHoldError(null)}
+              className="text-rose-400 hover:text-rose-200 text-xs px-2 py-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Title */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -111,6 +164,7 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
             📍 {turf.region?.locality}, Mumbai &bull; Prices shown in Indian Rupees (INR)
           </p>
         </div>
+
 
         {/* Court Switcher */}
         {courts.length > 1 && (
@@ -260,14 +314,20 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               >
                 Clear
               </button>
-              <Link
-                href={`/turfs/${turf.slug}/checkout?court=${selectedCourt?.id}&slot=${encodeURIComponent(
-                  selectedSlot.id
-                )}`}
-                className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-500 text-black text-xs font-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 text-center"
+              <button
+                disabled={isHolding}
+                onClick={handleProceedToCheckout}
+                className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-500 text-black text-xs font-black hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-2"
               >
-                Proceed to Book ({selectedSlot.priceFormatted}) &rarr;
-              </Link>
+                {isHolding ? (
+                  <>
+                    <span className="inline-block h-3 w-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <span>Locking Slot...</span>
+                  </>
+                ) : (
+                  <span>Proceed to Book ({selectedSlot.priceFormatted}) &rarr;</span>
+                )}
+              </button>
             </div>
           </div>
         </div>
