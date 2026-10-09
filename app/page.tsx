@@ -135,9 +135,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer Status */}
-      <footer className="border-t border-neutral-800/80 px-6 py-6 text-center text-xs text-neutral-500">
-        <p>GoTurf Platform &copy; 2026. Live in Mumbai &bull; Phase 3 Complete.</p>
+      {/* Footer Status & Compliance */}
+      <footer className="border-t border-neutral-800/80 px-6 py-8 text-center text-xs text-neutral-500 space-y-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-neutral-400">
+          <Link href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+          <span>&bull;</span>
+          <Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+          <span>&bull;</span>
+          <Link href="/refund-policy" className="hover:text-emerald-400 transition-colors">Cancellation & Refund Policy</Link>
+          <span>&bull;</span>
+          <Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link>
+        </div>
+        <p>GoTurf Platform &copy; 2026. Live in Mumbai &bull; Carter Road, Bandra West &bull; support@goturf.in</p>
       </footer>
     </main>
   );
