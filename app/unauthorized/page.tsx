@@ -6,30 +6,30 @@ export default function UnauthorizedPage({
   searchParams: Promise<{ reason?: string }>;
 }) {
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center px-6 selection:bg-rose-500 selection:text-white">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-neutral-900/70 border border-neutral-800 text-center shadow-2xl">
-        <div className="h-16 w-16 mx-auto mb-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-3xl">
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col items-center justify-center px-6 selection:bg-[#ffff94] selection:text-[#03594d]">
+      <div className="max-w-md w-full p-8 sm:p-10 rounded-[32px] bg-white border-2 border-[#03594d] text-center shadow-maggie-lg">
+        <div className="h-16 w-16 mx-auto mb-6 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] flex items-center justify-center text-3xl shadow-maggie-sm">
           🛡️
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
+        <h1 className="text-2xl font-black uppercase tracking-tight text-[#03594d] mb-2">
           Access Restricted
         </h1>
 
-        <p className="text-sm text-neutral-400 mb-6 leading-relaxed">
+        <p className="text-xs text-[#03594d]/80 font-bold mb-6 leading-relaxed">
           You do not have the required permissions to view this section. This portal is strictly protected by role-based access rules.
         </p>
 
         <div className="flex flex-col gap-3">
           <Link
             href="/login"
-            className="w-full py-3 px-4 rounded-xl bg-white text-black font-semibold text-sm hover:bg-neutral-200 transition-colors"
+            className="w-full py-3.5 px-4 rounded-full bg-[#03594d] text-[#82eda6] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
           >
             Switch Account or Sign In
           </Link>
           <Link
             href="/"
-            className="w-full py-3 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-medium text-sm transition-colors"
+            className="w-full py-3.5 px-4 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie-sm transition-all"
           >
             Back to Home
           </Link>

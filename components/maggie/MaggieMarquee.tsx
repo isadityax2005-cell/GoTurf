@@ -24,17 +24,17 @@ export default function MaggieMarquee({ variant = 'green' }: Props) {
 
   const bgClass =
     variant === 'green'
-      ? 'bg-[#07070d] text-[#5245F8] border-y border-[#5245F8]/30 shadow-[0_0_20px_rgba(82,69,248,0.15)]'
-      : 'bg-[#090802] text-[#F9B318] border-y border-[#F9B318]/30 shadow-[0_0_20px_rgba(249,179,24,0.15)]';
+      ? 'bg-[#03594d] text-[#82eda6] border-y-2 border-[#03594d]'
+      : 'bg-[#ffff94] text-[#03594d] border-y-2 border-[#03594d]';
 
   return (
-    <div className={`overflow-hidden py-3 select-none ${bgClass}`}>
+    <div className={`overflow-hidden py-3.5 select-none ${bgClass}`}>
       <div className="animate-marquee flex items-center gap-8 text-xs font-black tracking-widest uppercase">
-        {/* Render twice for continuous loop */}
+        {/* Render twice for seamless continuous marquee loop */}
         {[...items, ...items].map((text, i) => (
           <div key={i} className="flex items-center gap-8 whitespace-nowrap">
             <span>{text}</span>
-            <span className="opacity-40">&bull;</span>
+            <span className="opacity-60">&bull;</span>
           </div>
         ))}
       </div>

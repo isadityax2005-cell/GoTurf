@@ -24,32 +24,35 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Header */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-black text-sm">
+      <header className="border-b-2 border-[#03594d] px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#82eda6]/90">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="h-9 w-9 rounded-full bg-[#03594d] text-[#82eda6] flex items-center justify-center font-black text-sm shadow-maggie-sm group-hover:rotate-6 transition-transform">
             GT
           </div>
-          <span className="font-bold text-lg tracking-tight text-white">GoTurf</span>
+          <span className="font-black text-2xl tracking-tight text-[#03594d] lowercase">goturf</span>
+          <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
+            mumbai
+          </span>
         </Link>
-        <Link href="/" className="text-xs text-neutral-400 hover:text-white transition-colors">
+        <Link href="/" className="text-xs font-black uppercase text-[#03594d] hover:underline tracking-wider transition-colors">
           &larr; Back to Home
         </Link>
       </header>
 
       {/* Main Container */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md bg-neutral-900/60 border border-neutral-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+        <div className="w-full max-w-md bg-white border-2 border-[#03594d] rounded-[32px] p-8 sm:p-10 shadow-maggie-lg text-[#03594d]">
           {/* Role Selector Tabs */}
-          <div className="flex p-1 rounded-2xl bg-neutral-950 border border-neutral-800/80 mb-6">
+          <div className="flex p-1 rounded-2xl bg-[#f9f8f4] border-2 border-[#03594d] mb-6">
             <button
               type="button"
               onClick={() => setRole('player')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+              className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
                 role === 'player'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
+                  : 'text-[#03594d]/70 hover:text-[#03594d]'
               }`}
             >
               ⚽ Player Account
@@ -57,10 +60,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setRole('owner')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+              className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
                 role === 'owner'
-                  ? 'bg-emerald-500 text-black shadow-sm font-bold'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm'
+                  : 'text-[#03594d]/70 hover:text-[#03594d]'
               }`}
             >
               🏟️ Turf Owner
@@ -68,10 +71,10 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-black uppercase tracking-tight text-[#03594d]">
               {role === 'player' ? 'Welcome to GoTurf' : 'Turf Partner Portal'}
             </h1>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="text-xs font-semibold text-[#03594d]/80 mt-1">
               {role === 'player'
                 ? 'Sign in to book live slots across Mumbai'
                 : 'Sign in to manage your turf availability, prices, and offline blocks'}
@@ -81,7 +84,7 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-1.5">
+              <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
                 Full Name
               </label>
               <input
@@ -90,12 +93,12 @@ export default function LoginPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'player' ? 'Karan Verma' : 'Rohan Mehta'}
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-1.5">
+              <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
                 Email Address
               </label>
               <input
@@ -104,12 +107,12 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your.email@example.com"
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-1.5">
+              <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
                 WhatsApp / Phone Number
               </label>
               <input
@@ -118,18 +121,14 @@ export default function LoginPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 98200 12345"
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-xl font-bold text-sm transition-all shadow-lg ${
-                role === 'owner'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-black hover:opacity-95 shadow-emerald-500/20'
-                  : 'bg-white text-black hover:bg-neutral-200'
-              }`}
+              className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] hover:-translate-y-0.5 transition-all cursor-pointer"
             >
               {isLoading
                 ? 'Preparing Link...'
@@ -140,26 +139,26 @@ export default function LoginPage() {
           </form>
 
           {statusMessage && (
-            <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+            <div className="mt-4 p-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] text-xs font-bold text-center shadow-maggie-sm">
               {statusMessage}
             </div>
           )}
 
           {/* Quick Demo Role Switcher for Phase 2 Testing */}
-          <div className="mt-8 pt-6 border-t border-neutral-800/80 text-center">
-            <span className="text-[11px] uppercase tracking-wider text-neutral-500 font-semibold block mb-3">
-              Direct Portal Navigation (Protected Routes)
+          <div className="mt-8 pt-6 border-t-2 border-[#03594d]/15 text-center">
+            <span className="text-[11px] uppercase tracking-wider text-[#03594d]/70 font-black block mb-3">
+              Direct Portal Navigation
             </span>
             <div className="flex gap-2">
               <Link
                 href="/owner"
-                className="flex-1 py-2 px-3 rounded-lg bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-colors"
               >
                 Owner Portal &rarr;
               </Link>
               <Link
                 href="/admin"
-                className="flex-1 py-2 px-3 rounded-lg bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 hover:border-rose-500/50 hover:text-rose-400 transition-colors"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-colors"
               >
                 Admin Suite &rarr;
               </Link>
@@ -169,7 +168,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-800/80 px-6 py-4 text-center text-xs text-neutral-600">
+      <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
         Passwordless Authentication &bull; Zero SMS Cost &bull; Instant Access
       </footer>
     </main>

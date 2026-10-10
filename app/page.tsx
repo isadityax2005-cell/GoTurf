@@ -9,31 +9,17 @@ import MaggieMentalLoad from '@/components/maggie/MaggieMentalLoad';
 import MaggieTurfsShowcase from '@/components/maggie/MaggieTurfsShowcase';
 import MaggieEvents from '@/components/maggie/MaggieEvents';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
-import CrystalizedBall from '@/components/ui/CrystalizedBall';
 
 export default function HomePage() {
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
 
   return (
-    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black relative overflow-hidden">
-      {/* Background Ambient Canvas */}
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-20 overflow-hidden">
-        <CrystalizedBall
-          preset="nebula"
-          color="#5245F8"
-          size={1.6}
-          speed={0.4}
-          interactive={false}
-          glow={0.8}
-          haze={0.9}
-        />
-      </div>
-
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d] relative overflow-hidden">
       <div className="relative z-10 flex flex-col flex-1">
         {/* 1. Maggie Navbar */}
         <MaggieNavbar />
 
-        {/* 2. Mint Hero Section with Floating Stickers & Handwriting */}
+        {/* 2. Mint Hero Section with Floating Stickers & Handwriting & GSAP animations */}
         <MaggieHero />
 
         {/* 3. Green Running Marquee Ticker */}

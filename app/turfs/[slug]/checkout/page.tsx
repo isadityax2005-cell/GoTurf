@@ -26,7 +26,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-neutral-950 text-neutral-400 flex items-center justify-center text-xs">
+        <div className="min-h-screen bg-[#82eda6] text-[#03594d] flex items-center justify-center text-sm font-black">
           Loading checkout...
         </div>
       }

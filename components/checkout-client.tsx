@@ -231,23 +231,23 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
   const durationLabel = durationHours > 1 ? `${durationHours} Hours (${durationMins}m)` : `${durationMins} Mins`;
 
   return (
-    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black">
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Top Header */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#030303]/80">
+      <header className="border-b-2 border-[#03594d] px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#82eda6]/90 text-[#03594d]">
         <Link
           href={`/turfs/${turf.slug}`}
-          className="flex items-center gap-2 text-xs text-neutral-400 hover:text-white"
+          className="flex items-center gap-2 text-xs font-black text-[#03594d] hover:underline uppercase tracking-wider"
         >
           <span>&larr;</span>
           <span>Cancel & Exit</span>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs font-black text-[#03594d] bg-[#ffff94] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
             {paymentSuccess ? 'Slot Confirmed' : isExpired ? 'Hold Expired' : 'Hold Active'}
           </span>
           <span
-            className={`h-2 w-2 rounded-full ${
-              paymentSuccess ? 'bg-[#5245F8]' : isExpired ? 'bg-rose-400' : 'bg-amber-400 animate-pulse'
+            className={`h-2.5 w-2.5 rounded-full ${
+              paymentSuccess ? 'bg-[#03594d]' : isExpired ? 'bg-rose-500' : 'bg-[#03594d] animate-ping'
             }`}
           />
         </div>
@@ -257,60 +257,60 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       <div className="max-w-2xl w-full mx-auto px-6 py-8 flex-1">
         {/* Payment Confirmed State / Digital Match Pass */}
         {paymentSuccess ? (
-          <div className="p-8 rounded-3xl bg-neutral-900/60 border border-[#5245F8]/40 text-center animate-in zoom-in-95 duration-200">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-[#5245F8]/20 border border-[#5245F8]/40 text-[#F9B318] flex items-center justify-center text-3xl font-black">
+          <div className="p-8 sm:p-10 rounded-[32px] bg-white border-2 border-[#03594d] shadow-maggie-lg text-center animate-in zoom-in-95 duration-200 text-[#03594d]">
+            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] flex items-center justify-center text-3xl font-black shadow-maggie-sm">
               ✓
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#F9B318] px-3 py-1 rounded-full bg-[#5245F8]/15 border border-[#5245F8]/40 inline-block mb-2">
+            <span className="text-[10px] uppercase font-black tracking-widest text-[#03594d] px-3.5 py-1 rounded-full bg-[#ffff94] border border-[#03594d] inline-block mb-3 shadow-maggie-sm">
               Slot Reserved &bull; Zero Double-Bookings Guarantee
             </span>
-            <h1 className="text-2xl font-black text-white tracking-tight mb-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#03594d] tracking-tight uppercase mb-2">
               Match Slot Locked!
             </h1>
-            <p className="text-xs text-neutral-400 max-w-md mx-auto mb-6">
+            <p className="text-xs text-[#03594d]/80 font-bold max-w-md mx-auto mb-6">
               Your online payment was verified by signed webhook. Show this Match Pass to the turf manager when your squad arrives.
             </p>
 
             {/* Match Pass Card */}
-            <div className="p-5 rounded-2xl bg-[#030303] border border-neutral-800/80 max-w-md mx-auto mb-6 text-left text-xs space-y-2.5 shadow-xl">
-              <div className="flex justify-between items-center pb-2 border-b border-neutral-800">
+            <div className="p-6 rounded-2xl bg-[#f9f8f4] border-2 border-[#03594d] max-w-md mx-auto mb-6 text-left text-xs space-y-3 shadow-maggie">
+              <div className="flex justify-between items-center pb-2.5 border-b-2 border-[#03594d]/15">
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Venue</span>
-                  <p className="text-sm font-bold text-white">{turf.name}</p>
+                  <span className="text-[10px] text-[#03594d]/70 uppercase font-black">Venue</span>
+                  <p className="text-sm font-black text-[#03594d]">{turf.name}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Match PIN</span>
-                  <p className="text-base font-black font-mono text-[#F9B318] tracking-wider">
+                  <span className="text-[10px] text-[#03594d]/70 uppercase font-black">Match PIN</span>
+                  <p className="text-lg font-black font-mono text-[#03594d] tracking-wider bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d]">
                     {holdBooking?.check_in_otp || '4821'}
                   </p>
                 </div>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-neutral-400">Match Time:</span>
-                <span className="text-[#F9B318] font-bold">{matchTimeLabel}</span>
+                <span className="text-[#03594d]/75 font-semibold">Match Time:</span>
+                <span className="text-[#03594d] font-black">{matchTimeLabel}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-400">Court / Arena:</span>
-                <span className="text-white font-medium">{court?.name}</span>
+                <span className="text-[#03594d]/75 font-semibold">Court / Arena:</span>
+                <span className="text-[#03594d] font-bold">{court?.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-400">Player:</span>
-                <span className="text-white font-medium">{playerName}</span>
+                <span className="text-[#03594d]/75 font-semibold">Player:</span>
+                <span className="text-[#03594d] font-bold">{playerName}</span>
               </div>
 
-              <div className="pt-2 border-t border-neutral-800">
-                <div className="flex justify-between text-neutral-300">
-                  <span>Paid Online (Advance + Fee):</span>
-                  <span className="font-semibold text-white">₹{onlinePayable}</span>
+              <div className="pt-2.5 border-t-2 border-[#03594d]/15">
+                <div className="flex justify-between text-[#03594d]">
+                  <span className="font-semibold">Paid Online (Advance + Fee):</span>
+                  <span className="font-black text-[#03594d]">₹{onlinePayable}</span>
                 </div>
                 {paymentMode === 'token_advance' && venueBalance > 0 ? (
-                  <div className="flex justify-between text-amber-400 font-bold pt-1">
+                  <div className="flex justify-between text-[#03594d] font-black pt-1">
                     <span>Balance Due at Turf (Cash/UPI):</span>
                     <span>₹{venueBalance}</span>
                   </div>
                 ) : (
-                  <div className="flex justify-between text-[#F9B318] font-bold pt-1">
+                  <div className="flex justify-between text-[#03594d] font-black pt-1">
                     <span>Balance Due at Turf:</span>
                     <span>₹0 (100% Pre-paid)</span>
                   </div>
@@ -321,13 +321,13 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/bookings"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#5245F8] text-white text-xs font-black hover:bg-[#4335e6] transition-all shadow-lg shadow-[#5245F8]/30"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
               >
                 View in My Bookings &rarr;
               </Link>
               <Link
                 href="/turfs"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 text-xs font-semibold hover:text-white"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-white border-2 border-[#03594d] text-[#03594d] text-xs font-black uppercase tracking-wider shadow-maggie-sm hover:bg-[#ffff94] transition-all"
               >
                 Explore More Turfs
               </Link>
@@ -337,21 +337,21 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
           <>
             {/* Countdown Banner */}
             <div
-              className={`p-4 rounded-2xl border mb-6 flex items-center justify-between transition-all ${
+              className={`p-4 rounded-2xl border-2 border-[#03594d] mb-6 flex items-center justify-between transition-all shadow-maggie-sm ${
                 isExpired
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                  ? 'bg-rose-100 text-rose-800 border-rose-500'
                   : secondsRemaining < 120
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                  : 'bg-neutral-900 border-neutral-800 text-white'
+                  ? 'bg-[#fdc068] text-[#03594d]'
+                  : 'bg-[#ffff94] text-[#03594d]'
               }`}
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{isExpired ? '⌛' : '⏱️'}</span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider">
+                  <p className="text-xs font-black uppercase tracking-wider">
                     {isExpired ? 'Hold Expired' : 'Temporary 10-Minute Hold'}
                   </p>
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs font-semibold opacity-90">
                     {isExpired
                       ? 'Your slot has been released back to other players'
                       : 'Slot is locked for you while you complete checkout'}
@@ -362,7 +362,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 <span
                   suppressHydrationWarning
                   className={`text-2xl font-black font-mono tracking-tight ${
-                    isExpired ? 'text-rose-400' : 'text-[#F9B318]'
+                    isExpired ? 'text-rose-600' : 'text-[#03594d]'
                   }`}
                 >
                   {formatTimer(secondsRemaining)}
@@ -372,14 +372,14 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
             {/* Error Banner */}
             {paymentError && (
-              <div className="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 flex items-center justify-between text-xs animate-in fade-in">
+              <div className="mb-6 p-4 rounded-2xl bg-rose-100 border-2 border-rose-500 text-rose-800 flex items-center justify-between text-xs animate-in fade-in shadow-maggie-sm font-bold">
                 <div className="flex items-center gap-2">
                   <span className="text-base">⚠️</span>
                   <span>{paymentError}</span>
                 </div>
                 <button
                   onClick={() => setPaymentError(null)}
-                  className="text-rose-400 hover:text-rose-200 text-xs px-2 py-1"
+                  className="text-rose-800 hover:text-rose-950 font-black text-xs px-2 py-1 underline"
                 >
                   Dismiss
                 </button>
@@ -387,14 +387,14 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             )}
 
             {isExpired ? (
-              <div className="p-8 rounded-3xl bg-neutral-900/50 border border-neutral-800 text-center">
-                <h2 className="text-lg font-bold text-white mb-2">Slot Released</h2>
-                <p className="text-xs text-neutral-400 mb-6">
+              <div className="p-8 rounded-3xl bg-white border-2 border-[#03594d] text-center shadow-maggie text-[#03594d]">
+                <h2 className="text-lg font-black uppercase mb-2">Slot Released</h2>
+                <p className="text-xs font-semibold opacity-80 mb-6">
                   To prevent locking venues permanently, slots are freed if payment is not completed within 10 minutes.
                 </p>
                 <Link
                   href={`/turfs/${turf.slug}/book?court=${court?.id}`}
-                  className="px-6 py-3 rounded-xl bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-colors"
+                  className="px-6 py-3 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
                 >
                   Pick Another Slot &rarr;
                 </Link>
@@ -402,12 +402,14 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             ) : (
               <div className="space-y-6">
                 {/* Payment Option Selector (Token Advance vs Full Prepayment) */}
-                <div className="p-5 rounded-3xl bg-neutral-900/60 border border-neutral-800 space-y-3">
+                <div className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie space-y-3 text-[#03594d]">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-white uppercase tracking-wider">
+                    <label className="text-xs font-black uppercase tracking-wider">
                       Choose How You Want to Pay
                     </label>
-                    <span className="text-[10px] text-neutral-400">Mumbai Squad Friendly</span>
+                    <span className="text-[10px] font-black uppercase bg-[#ffff94] px-2.5 py-0.5 rounded-full border border-[#03594d]">
+                      Mumbai Squad Friendly
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -415,25 +417,25 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     <button
                       type="button"
                       onClick={() => setPaymentMode('token_advance')}
-                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-4 rounded-2xl border-2 border-[#03594d] text-left transition-all cursor-pointer flex flex-col justify-between ${
                         paymentMode === 'token_advance'
-                          ? 'bg-[#5245F8]/15 border-[#5245F8] text-white shadow-lg shadow-[#5245F8]/25'
-                          : 'bg-[#030303] border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-[#ffff94] shadow-maggie ring-2 ring-[#03594d] translate-x-0.5 translate-y-0.5'
+                          : 'bg-[#f9f8f4] shadow-maggie-sm hover:bg-[#ffff94]/40'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="font-bold text-xs text-white">Token Advance</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#F9B318] border border-[#5245F8]/40">
+                          <span className="font-black text-xs text-[#03594d]">Token Advance</span>
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#82eda6] text-[#03594d] border border-[#03594d]">
                             Recommended 🏏
                           </span>
                         </div>
-                        <p className="text-[11px] text-neutral-400 leading-snug">
-                          Pay <strong className="text-[#F9B318] font-bold">₹{tokenAdvance + platformFee}</strong> online now to lock slot.
+                        <p className="text-[11px] text-[#03594d]/85 font-semibold leading-snug">
+                          Pay <strong className="text-[#03594d] font-black underline">₹{tokenAdvance + platformFee}</strong> online now to lock slot.
                         </p>
                       </div>
-                      <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
-                        Pay remaining <strong className="text-white">₹{slotTotal - tokenAdvance}</strong> at turf gate (Cash/UPI)
+                      <p className="text-[10px] text-[#03594d]/75 font-bold mt-3 pt-2 border-t border-[#03594d]/15">
+                        Pay remaining <strong className="text-[#03594d]">₹{slotTotal - tokenAdvance}</strong> at turf gate (Cash/UPI)
                       </p>
                     </button>
 
@@ -441,22 +443,24 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     <button
                       type="button"
                       onClick={() => setPaymentMode('full_online')}
-                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-4 rounded-2xl border-2 border-[#03594d] text-left transition-all cursor-pointer flex flex-col justify-between ${
                         paymentMode === 'full_online'
-                          ? 'bg-[#5245F8]/15 border-[#5245F8] text-white shadow-lg shadow-[#5245F8]/25'
-                          : 'bg-[#030303] border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-[#ffff94] shadow-maggie ring-2 ring-[#03594d] translate-x-0.5 translate-y-0.5'
+                          : 'bg-[#f9f8f4] shadow-maggie-sm hover:bg-[#ffff94]/40'
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="font-bold text-xs text-white">100% Online</span>
-                          <span className="text-[9px] font-semibold text-neutral-500">Zero Cash</span>
+                          <span className="font-black text-xs text-[#03594d]">100% Online</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white text-[#03594d] border border-[#03594d]">
+                            Zero Cash
+                          </span>
                         </div>
-                        <p className="text-[11px] text-neutral-400 leading-snug">
-                          Pay full <strong className="text-[#F9B318] font-bold">₹{slotTotal + platformFee}</strong> online now.
+                        <p className="text-[11px] text-[#03594d]/85 font-semibold leading-snug">
+                          Pay full <strong className="text-[#03594d] font-black underline">₹{slotTotal + platformFee}</strong> online now.
                         </p>
                       </div>
-                      <p className="text-[10px] text-neutral-500 mt-3 pt-2 border-t border-neutral-800/80">
+                      <p className="text-[10px] text-[#03594d]/75 font-bold mt-3 pt-2 border-t border-[#03594d]/15">
                         Walk straight onto the pitch &bull; ₹0 due at venue
                       </p>
                     </button>
@@ -464,90 +468,92 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 </div>
 
                 {/* Match Details Card */}
-                <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800">
-                  <h2 className="text-base font-bold text-white mb-4">Match Details</h2>
+                <div className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie text-[#03594d]">
+                  <h2 className="text-base font-black uppercase mb-4">Match Details</h2>
                   <div className="space-y-2 text-xs">
-                    <div className="flex justify-between py-1.5 border-b border-neutral-800/60">
-                      <span className="text-neutral-400">Venue</span>
-                      <span className="font-semibold text-white">{turf.name}</span>
+                    <div className="flex justify-between py-1.5 border-b border-[#03594d]/15">
+                      <span className="text-[#03594d]/75 font-semibold">Venue</span>
+                      <span className="font-black text-[#03594d]">{turf.name}</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-neutral-800/60">
-                      <span className="text-neutral-400">Court & Sport</span>
-                      <span className="font-semibold text-white">{court?.name}</span>
+                    <div className="flex justify-between py-1.5 border-b border-[#03594d]/15">
+                      <span className="text-[#03594d]/75 font-semibold">Court & Sport</span>
+                      <span className="font-black text-[#03594d]">{court?.name}</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-neutral-800/60">
-                      <span className="text-neutral-400">Time Window (IST)</span>
-                      <span className="font-semibold text-[#F9B318]">{matchTimeLabel}</span>
+                    <div className="flex justify-between py-1.5 border-b border-[#03594d]/15">
+                      <span className="text-[#03594d]/75 font-semibold">Time Window (IST)</span>
+                      <span className="font-black text-[#03594d] bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d]">{matchTimeLabel}</span>
                     </div>
                     <div className="flex justify-between py-1.5">
-                      <span className="text-neutral-400">Cancellation Rule</span>
-                      <span className="text-neutral-300 font-medium">{turf.cancellation_rule || 'Free cancellation up to 24h'}</span>
+                      <span className="text-[#03594d]/75 font-semibold">Cancellation Rule</span>
+                      <span className="text-[#03594d] font-bold">{turf.cancellation_rule || 'Free cancellation up to 24h'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Player Information */}
-                <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800 space-y-3">
-                  <h2 className="text-base font-bold text-white mb-2">Player Details (For Receipt & Access)</h2>
+                <div className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie space-y-3 text-[#03594d]">
+                  <h2 className="text-base font-black uppercase mb-2">Player Details (For Receipt & Access)</h2>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-400 mb-1">Full Name</label>
+                    <label className="block text-xs font-black text-[#03594d] mb-1">Full Name</label>
                     <input
                       type="text"
                       value={playerName}
                       onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs text-[#03594d] font-bold focus:bg-white focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-400 mb-1">WhatsApp Phone Number</label>
+                    <label className="block text-xs font-black text-[#03594d] mb-1">WhatsApp Phone Number</label>
                     <input
                       type="tel"
                       value={playerPhone}
                       onChange={(e) => setPlayerPhone(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs text-[#03594d] font-bold focus:bg-white focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-400 mb-1">Email</label>
+                    <label className="block text-xs font-black text-[#03594d] mb-1">Email</label>
                     <input
                       type="email"
                       value={playerEmail}
                       onChange={(e) => setPlayerEmail(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-[#030303] border border-neutral-800 text-xs text-white"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs text-[#03594d] font-bold focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Transparent Bill Breakdown */}
-                <div className="p-6 rounded-3xl bg-neutral-900/50 border border-neutral-800 space-y-3 text-xs">
-                  <h2 className="text-base font-bold text-white mb-2">Price Breakdown</h2>
-                  <div className="flex justify-between text-neutral-300">
+                <div className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie space-y-3 text-xs text-[#03594d]">
+                  <h2 className="text-base font-black uppercase mb-2">Price Breakdown</h2>
+                  <div className="flex justify-between text-[#03594d] font-bold">
                     <span>Slot Value ({durationLabel})</span>
                     <span>₹{slotTotal.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex justify-between text-neutral-300">
+                    <div className="flex justify-between text-[#03594d] font-bold">
                       <span className="flex items-center gap-1.5">
                         <span>Platform Convenience Fee</span>
-                        <span className="text-[10px] text-[#F9B318] bg-[#5245F8]/15 px-1.5 py-0.5 rounded border border-[#5245F8]/40">
+                        <span className="text-[10px] text-[#03594d] bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d]">
                           Verified Protection
                         </span>
                       </span>
                       <span>₹{platformFee}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-500 leading-relaxed">
+                    <p className="text-[11px] text-[#03594d]/75 font-semibold leading-relaxed">
                       Covers live database locking, instant UPI payment handling, and 100% automated refund protection.
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-neutral-800 space-y-2">
-                    <div className="flex justify-between items-center text-sm font-bold text-white">
+                  <div className="pt-3 border-t-2 border-[#03594d]/15 space-y-2">
+                    <div className="flex justify-between items-center text-sm font-black text-[#03594d]">
                       <span>Total Amount to Pay Now</span>
-                      <span className="text-[#F9B318] text-xl font-black">₹{onlinePayable.toLocaleString('en-IN')}</span>
+                      <span className="text-[#03594d] text-2xl font-black bg-[#ffff94] px-3 py-1 rounded-xl border-2 border-[#03594d] shadow-maggie-sm">
+                        ₹{onlinePayable.toLocaleString('en-IN')}
+                      </span>
                     </div>
 
                     {paymentMode === 'token_advance' && venueBalance > 0 && (
-                      <div className="flex justify-between items-center text-xs text-amber-300 font-semibold p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <div className="flex justify-between items-center text-xs text-[#03594d] font-bold p-3 rounded-xl bg-[#ffff94]/70 border-2 border-[#03594d]">
                         <span>Remaining Balance Due at Venue:</span>
                         <span>₹{venueBalance.toLocaleString('en-IN')} (Cash/UPI)</span>
                       </div>
@@ -561,11 +567,11 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     type="button"
                     disabled={isPaying || isExpired}
                     onClick={handleInitiatePayment}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#5245F8] via-[#6366f1] to-[#5245F8] text-white font-black text-sm hover:opacity-95 disabled:opacity-50 shadow-xl shadow-[#5245F8]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-4 rounded-full bg-[#03594d] text-[#82eda6] font-black text-sm uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] hover:-translate-y-0.5 disabled:opacity-50 shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isPaying ? (
                       <>
-                        <span className="inline-block h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        <span className="inline-block h-4 w-4 border-2 border-[#82eda6] border-t-transparent rounded-full animate-spin" />
                         <span>Verifying & Locking Slot...</span>
                       </>
                     ) : (
@@ -583,7 +589,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     type="button"
                     disabled={isReleasing || isPaying}
                     onClick={handleRelease}
-                    className="w-full py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white text-xs font-medium transition-colors"
+                    className="w-full py-3 rounded-full bg-white border-2 border-[#03594d] text-[#03594d] hover:bg-[#ffff94] text-xs font-black uppercase tracking-wider shadow-maggie-sm transition-colors cursor-pointer"
                   >
                     {isReleasing ? 'Releasing Slot...' : 'Release Slot & Back Out'}
                   </button>
@@ -595,9 +601,10 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-800/80 px-6 py-4 text-center text-xs text-neutral-600">
+      <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
         Bank-Grade Encryption &bull; Signed Webhook Guarantee &bull; GoTurf Pay
       </footer>
     </main>
   );
 }
+

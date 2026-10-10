@@ -1,64 +1,63 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { DEMO_TURFS } from '@/lib/data/turfs';
-import {
-  getActiveBookingsForCourt,
-  createOwnerBlock,
-  removeOwnerBlock,
-} from '@/lib/data/bookings';
-import { generateCourtSlots, type SlotGridItem } from '@/lib/engine/slot-calculator';
 
-export default function OwnerAvailabilityPage() {
-  const turf = DEMO_TURFS[0]; // Rohan Mehta's Bandra venue
-  const courts = turf.courts || [];
+interface AdminSlot {
+  id: string;
+  startTimeIST: string;
+  endTimeIST: string;
+  status: 'available' | 'blocked' | 'booked';
+  priceFormatted: string;
+  courtId: string;
+}
 
-  const [selectedCourtId, setSelectedCourtId] = useState(courts[0]?.id || '');
-  const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
-
-  const [selectedDateStr, setSelectedDateStr] = useState('2026-10-15');
-  const [modalSlot, setModalSlot] = useState<SlotGridItem | null>(null);
-  const [blockReason, setBlockReason] = useState('Phone Booking');
+export default function AvailabilityManagementPage() {
+  const [selectedCourtId, setSelectedCourtId] = useState('court-1');
+  const [selectedDateStr, setSelectedDateStr] = useState('2026-10-12');
   const [statusNote, setStatusNote] = useState<string | null>(null);
 
-  // Generate slots for this court & date
-  const slots = useMemo(() => {
-    if (!selectedCourt) return [];
-    const activeBookings = getActiveBookingsForCourt(selectedCourt.id);
+  const courts = [
+    { id: 'court-1', name: 'Court 1 - Box Cricket' },
+    { id: 'court-2', name: 'Arena B - Football' },
+  ];
 
-    return generateCourtSlots({
-      court: selectedCourt,
-      dateStr: selectedDateStr,
-      activeBookings,
-      now: new Date('2026-10-15T00:00:00Z'), // fixed testing anchor
-    });
-  }, [selectedCourt, selectedDateStr, statusNote]);
+  const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
+
+  const [slots, setSlots] = useState<AdminSlot[]>([
+    { id: 's-1', startTimeIST: '06:00 AM', endTimeIST: '07:00 AM', status: 'available', priceFormatted: '₹1,200', courtId: 'court-1' },
+    { id: 's-2', startTimeIST: '07:00 AM', endTimeIST: '08:00 AM', status: 'available', priceFormatted: '₹1,200', courtId: 'court-1' },
+    { id: 's-3', startTimeIST: '08:00 AM', endTimeIST: '09:00 AM', status: 'blocked', priceFormatted: '₹1,200', courtId: 'court-1' },
+    { id: 's-4', startTimeIST: '09:00 AM', endTimeIST: '10:00 AM', status: 'available', priceFormatted: '₹1,200', courtId: 'court-1' },
+    { id: 's-5', startTimeIST: '06:00 PM', endTimeIST: '07:00 PM', status: 'booked', priceFormatted: '₹1,800', courtId: 'court-1' },
+    { id: 's-6', startTimeIST: '07:00 PM', endTimeIST: '08:00 PM', status: 'available', priceFormatted: '₹1,800', courtId: 'court-1' },
+    { id: 's-7', startTimeIST: '08:00 PM', endTimeIST: '09:00 PM', status: 'available', priceFormatted: '₹1,800', courtId: 'court-1' },
+    { id: 's-8', startTimeIST: '09:00 PM', endTimeIST: '10:00 PM', status: 'available', priceFormatted: '₹1,800', courtId: 'court-1' },
+  ]);
+
+  const [modalSlot, setModalSlot] = useState<AdminSlot | null>(null);
+  const [blockReason, setBlockReason] = useState('Phone Booking');
 
   const handleConfirmBlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalSlot || !selectedCourt) return;
+    if (!modalSlot) return;
 
-    createOwnerBlock({
-      courtId: selectedCourt.id,
-      startAt: modalSlot.startAtUTC,
-      endAt: modalSlot.endAtUTC,
-      notes: blockReason,
-    });
-
-    setStatusNote(`🔒 Blocked slot (${modalSlot.startTimeIST} – ${modalSlot.endTimeIST}) for "${blockReason}".`);
+    setSlots((prev) =>
+      prev.map((s) => (s.id === modalSlot.id ? { ...s, status: 'blocked' } : s))
+    );
+    setStatusNote(`🔒 Blocked slot ${modalSlot.startTimeIST} (${blockReason}). Offline lock synced.`);
     setModalSlot(null);
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Top Navbar */}
-      <header className="border-b border-neutral-800/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-neutral-950/80">
-        <Link href="/owner" className="flex items-center gap-2 text-xs text-neutral-400 hover:text-white">
+      <header className="border-b-2 border-[#03594d] px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#82eda6]/90 text-[#03594d]">
+        <Link href="/owner" className="flex items-center gap-2 text-xs font-black text-[#03594d] hover:underline uppercase tracking-wider">
           <span>&larr;</span>
           <span>Owner Dashboard</span>
         </Link>
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
           Availability Management
         </span>
       </header>
@@ -67,19 +66,19 @@ export default function OwnerAvailabilityPage() {
       <div className="max-w-5xl w-full mx-auto px-6 py-8 flex-1">
         <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-[#03594d] uppercase tracking-tight">
               Manage Court Schedule & Offline Blocks
             </h1>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="text-xs text-[#03594d]/80 font-bold mt-1">
               Tap any free slot to block it for WhatsApp/phone bookings, maintenance, or batches.
             </p>
           </div>
         </div>
 
         {statusNote && (
-          <div className="mb-6 p-4 rounded-2xl bg-neutral-900 border border-emerald-500/30 text-xs text-emerald-400 flex justify-between items-center shadow-lg">
+          <div className="mb-6 p-4 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d] flex justify-between items-center shadow-maggie animate-in fade-in">
             <span>{statusNote}</span>
-            <button onClick={() => setStatusNote(null)} className="text-neutral-400 hover:text-white">
+            <button onClick={() => setStatusNote(null)} className="text-[#03594d] hover:text-black font-black text-sm">
               &times;
             </button>
           </div>
@@ -87,17 +86,17 @@ export default function OwnerAvailabilityPage() {
 
         {/* Court and Date Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <div className="p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-            <label className="block text-xs font-semibold text-neutral-400 mb-2">Select Court:</label>
+          <div className="p-5 rounded-2xl bg-white border-2 border-[#03594d] shadow-maggie text-[#03594d]">
+            <label className="block text-xs font-black uppercase tracking-wider mb-2">Select Court:</label>
             <div className="flex gap-2">
               {courts.map((court) => (
                 <button
                   key={court.id}
                   onClick={() => setSelectedCourtId(court.id)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase transition-all border-2 border-[#03594d] ${
                     selectedCourt?.id === court.id
-                      ? 'bg-emerald-500 text-black shadow-md'
-                      : 'bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-white'
+                      ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
+                      : 'bg-[#f9f8f4] text-[#03594d] hover:bg-[#ffff94]'
                   }`}
                 >
                   {court.name}
@@ -106,20 +105,20 @@ export default function OwnerAvailabilityPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-            <label className="block text-xs font-semibold text-neutral-400 mb-2">Date (YYYY-MM-DD):</label>
+          <div className="p-5 rounded-2xl bg-white border-2 border-[#03594d] shadow-maggie text-[#03594d]">
+            <label className="block text-xs font-black uppercase tracking-wider mb-2">Date (YYYY-MM-DD):</label>
             <input
               type="date"
               value={selectedDateStr}
               onChange={(e) => setSelectedDateStr(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="w-full px-4 py-2 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] focus:bg-white focus:outline-none"
             />
           </div>
         </div>
 
         {/* Slot Grid for Owner */}
         <div>
-          <h2 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">
+          <h2 className="text-sm font-black text-[#03594d] mb-3 uppercase tracking-wider">
             All Slots for {selectedDateStr}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -131,40 +130,40 @@ export default function OwnerAvailabilityPage() {
               return (
                 <div
                   key={slot.id}
-                  className={`p-4 rounded-2xl border flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border-2 border-[#03594d] flex flex-col justify-between text-[#03594d] ${
                     isFree
-                      ? 'bg-neutral-900/40 border-neutral-800 hover:border-emerald-500/50'
+                      ? 'bg-white shadow-maggie-sm hover:shadow-maggie'
                       : isBlocked
-                      ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'bg-neutral-900/20 border-neutral-900 opacity-70'
+                      ? 'bg-[#ffff94] shadow-maggie-sm'
+                      : 'bg-[#f9f8f4]/60 border-[#03594d]/40 opacity-70'
                   }`}
                 >
                   <div>
-                    <span className="text-xs font-bold text-white block">{slot.startTimeIST}</span>
-                    <span className="text-[10px] text-neutral-500">{slot.endTimeIST}</span>
-                    <span className="text-xs font-semibold text-emerald-400 mt-2 block">
+                    <span className="text-xs font-black block">{slot.startTimeIST}</span>
+                    <span className="text-[10px] text-[#03594d]/70 font-semibold">{slot.endTimeIST}</span>
+                    <span className="text-xs font-black mt-2 block">
                       {slot.priceFormatted}
                     </span>
                   </div>
 
-                  <div className="mt-4 pt-2 border-t border-neutral-800/40">
+                  <div className="mt-4 pt-2 border-t-2 border-[#03594d]/10">
                     {isFree && (
                       <button
                         onClick={() => setModalSlot(slot)}
-                        className="w-full py-1.5 px-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-[11px] font-semibold text-neutral-200 transition-colors"
+                        className="w-full py-1.5 px-2 rounded-lg bg-[#03594d] text-[#82eda6] text-[11px] font-black uppercase hover:bg-[#02463c] transition-colors"
                       >
                         + Block Time
                       </button>
                     )}
 
                     {isBlocked && (
-                      <div className="text-[10px] text-amber-400 font-semibold flex items-center justify-between">
+                      <div className="text-[10px] font-black uppercase text-[#03594d] flex items-center justify-between">
                         <span>🔒 Offline Block</span>
                       </div>
                     )}
 
                     {isBooked && (
-                      <span className="text-[10px] text-neutral-400 font-semibold">
+                      <span className="text-[10px] text-[#03594d]/80 font-bold uppercase">
                         ⚽ Player Booked
                       </span>
                     )}
@@ -178,20 +177,20 @@ export default function OwnerAvailabilityPage() {
 
       {/* Block Slot Modal */}
       {modalSlot && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-          <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-1">Block Court Offline</h3>
-            <p className="text-xs text-neutral-400 mb-4">
+        <div className="fixed inset-0 bg-[#03594d]/75 backdrop-blur-sm flex items-center justify-center p-6 z-50 text-[#03594d]">
+          <div className="max-w-md w-full bg-[#f9f8f4] border-2 border-[#03594d] rounded-[32px] p-6 shadow-maggie-xl">
+            <h3 className="text-lg font-black uppercase mb-1">Block Court Offline</h3>
+            <p className="text-xs text-[#03594d]/80 font-semibold mb-4">
               Reserve slot {modalSlot.startTimeIST} &ndash; {modalSlot.endTimeIST} so players cannot book online.
             </p>
 
             <form onSubmit={handleConfirmBlock} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-neutral-300 mb-1">Reason for Block:</label>
+                <label className="block text-xs font-black uppercase mb-1.5">Reason for Block:</label>
                 <select
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-[#03594d] text-xs font-bold text-[#03594d]"
                 >
                   <option value="Phone Booking">Phone Booking (Advance Collected)</option>
                   <option value="WhatsApp Booking">WhatsApp Booking</option>
@@ -205,15 +204,15 @@ export default function OwnerAvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => setModalSlot(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-semibold hover:bg-neutral-700"
+                  className="flex-1 py-2.5 rounded-xl bg-white border-2 border-[#03594d] text-[#03594d] text-xs font-black uppercase shadow-maggie-sm hover:bg-[#ffff94]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20"
+                  className="flex-1 py-2.5 rounded-xl bg-[#03594d] text-[#82eda6] text-xs font-black uppercase border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c]"
                 >
-                  Confirm Offline Block
+                  Confirm Block
                 </button>
               </div>
             </form>
@@ -222,7 +221,7 @@ export default function OwnerAvailabilityPage() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-neutral-800/80 px-6 py-4 text-center text-xs text-neutral-600">
+      <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
         GoTurf Owner Availability Engine &bull; Instant Double-Booking Safeguard Active
       </footer>
     </main>

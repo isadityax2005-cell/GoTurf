@@ -26,7 +26,7 @@ export default function BookTurfPage({ params }: BookPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-neutral-950 text-neutral-400 flex items-center justify-center text-xs">
+        <div className="min-h-screen bg-[#82eda6] text-[#03594d] flex items-center justify-center text-sm font-black">
           Loading live slot grid...
         </div>
       }
