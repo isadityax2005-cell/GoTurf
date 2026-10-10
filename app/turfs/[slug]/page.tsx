@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
+import CrystalizedBall from '@/components/ui/CrystalizedBall';
 
 interface TurfDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -30,7 +31,20 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black">
+    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black relative overflow-hidden">
+      {/* Background Ambient Canvas */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20 overflow-hidden">
+        <CrystalizedBall
+          preset="nebula"
+          color="#5245F8"
+          size={1.6}
+          speed={0.4}
+          interactive={false}
+          glow={0.8}
+          haze={0.9}
+        />
+      </div>
+
       {/* Top Navbar */}
       <header className="border-b border-[#5245F8]/20 px-6 py-4 flex items-center justify-between backdrop-blur-xl sticky top-0 z-50 bg-[#030303]/90">
         <div className="flex items-center gap-3">
@@ -51,11 +65,27 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-5xl w-full mx-auto px-6 py-10 flex-1">
+      <div className="max-w-5xl w-full mx-auto px-6 py-10 flex-1 relative z-10">
         {/* Hero Banner */}
-        <div className="p-8 sm:p-10 rounded-[32px] bg-gradient-to-br from-[#0c0c14] via-[#08080c] to-[#030303] border border-[#5245F8]/30 shadow-[0_0_60px_rgba(82,69,248,0.15)] mb-8 relative overflow-hidden">
-          {/* Subtle Electric Violet Ambient Radial Glow */}
-          <div className="pointer-events-none absolute -right-20 -top-20 w-80 h-80 bg-[#5245F8]/15 rounded-full blur-[100px]" />
+        <div className="p-8 sm:p-10 rounded-[32px] bg-gradient-to-br from-[#0c0c14]/90 via-[#08080c]/90 to-[#030303]/95 border border-[#5245F8]/40 shadow-[0_0_60px_rgba(82,69,248,0.25)] mb-8 relative overflow-hidden backdrop-blur-xl group">
+          {/* CrystalizedBall Canvas Background */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-90">
+            <CrystalizedBall
+              preset="nebula"
+              color="#5245F8"
+              size={1.05}
+              glow={1.1}
+              sparks={0.7}
+              flares={0.7}
+              interactive={true}
+              hoverStrength={0.85}
+              speed={0.85}
+            />
+          </div>
+
+          {/* Subtle Electric Violet & Sun Yellow Ambient Glow */}
+          <div className="pointer-events-none absolute -right-20 -top-20 w-80 h-80 bg-[#5245F8]/20 rounded-full blur-[100px] z-0" />
+          <div className="pointer-events-none absolute -left-20 -bottom-20 w-60 h-60 bg-[#F9B318]/10 rounded-full blur-[90px] z-0" />
 
           <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
@@ -201,7 +231,7 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
       </div>
 
       {/* Footer Status & Compliance */}
-      <footer className="border-t border-[#5245F8]/20 px-6 py-8 text-center text-xs text-neutral-500 space-y-4 bg-[#030303]">
+      <footer className="border-t border-[#5245F8]/20 px-6 py-8 text-center text-xs text-neutral-500 space-y-4 bg-[#030303]/90 relative z-10">
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-neutral-400">
           <Link href="/terms" className="hover:text-[#F9B318] transition-colors">
             Terms of Service
