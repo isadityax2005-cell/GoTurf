@@ -2,20 +2,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #82eda6;
-  --foreground: #03594d;
+  --background: #030303;
+  --foreground: #ffffff;
   
-  /* Maggie Signature Color Palette */
-  --maggie-mint: #82eda6;
-  --maggie-pine: #03594d;
-  --maggie-butter: #ffff94;
-  --maggie-peach: #fdc068;
-  --maggie-orange: #ff9124;
-  --maggie-lavender: #f6bbfd;
-  --maggie-cyan: #aefbff;
-  --maggie-cream: #f9f8f4;
-  --maggie-pink: #fc5681;
-  --maggie-border: #03594d;
+  /* GoTurf Electric Violet & Sun Yellow Color Palette */
+  --theme-midnight: #030303;
+  --theme-violet: #5245F8;
+  --theme-yellow: #F9B318;
+  --theme-card: #09090e;
+  --theme-card-hover: #0f0f18;
+  --theme-border: rgba(82, 69, 248, 0.3);
 }
 
 @theme inline {
@@ -55,8 +51,8 @@ html.lenis body {
 }
 
 body {
-  background-color: var(--maggie-mint);
-  color: var(--maggie-pine);
+  background-color: #030303;
+  color: #ffffff;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   margin: 0;
@@ -68,62 +64,62 @@ body {
   font-family: 'Homemade Apple', cursive;
 }
 
-/* Maggie Neo-Brutalist Hard Shadows */
+/* GoTurf Dark Violet & Yellow Glow Shadows */
 .shadow-maggie-sm {
-  box-shadow: 2px 2px 0px 0px #03594d;
+  box-shadow: 0 0 15px rgba(82, 69, 248, 0.2), 2px 2px 0px 0px #5245F8;
 }
 
 .shadow-maggie {
-  box-shadow: 3px 3px 0px 0px #03594d;
+  box-shadow: 0 0 20px rgba(82, 69, 248, 0.25), 3px 3px 0px 0px #5245F8;
 }
 
 .shadow-maggie-lg {
-  box-shadow: 5px 5px 0px 0px #03594d;
+  box-shadow: 0 0 30px rgba(82, 69, 248, 0.3), 4px 4px 0px 0px #5245F8;
 }
 
 .shadow-maggie-xl {
-  box-shadow: 7px 7px 0px 0px #03594d;
+  box-shadow: 0 0 45px rgba(82, 69, 248, 0.35), 6px 6px 0px 0px #5245F8;
 }
 
 /* Tactile Button Press */
 .btn-maggie-primary {
-  background-color: #03594d;
-  color: #82eda6;
-  border: 1.5px solid #03594d;
+  background-color: #5245F8;
+  color: #ffffff;
+  border: 1.5px solid #5245F8;
   border-radius: 9999px;
-  box-shadow: 3px 3px 0px 0px rgba(3, 89, 77, 0.4);
+  box-shadow: 0 0 20px rgba(82, 69, 248, 0.4);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-maggie-primary:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px rgba(3, 89, 77, 0.6);
-  background-color: #02463c;
+  box-shadow: 0 0 28px rgba(82, 69, 248, 0.6);
+  background-color: #4335e6;
 }
 
 .btn-maggie-primary:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px 0px rgba(3, 89, 77, 0.4);
+  box-shadow: 1px 1px 0px 0px rgba(82, 69, 248, 0.4);
 }
 
 .btn-maggie-secondary {
   background-color: transparent;
-  color: #03594d;
-  border: 1.5px solid #03594d;
+  color: #F9B318;
+  border: 1.5px solid #F9B318;
   border-radius: 9999px;
-  box-shadow: 3px 3px 0px 0px #03594d;
+  box-shadow: 0 0 15px rgba(249, 179, 24, 0.2);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-maggie-secondary:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px #03594d;
-  background-color: rgba(3, 89, 77, 0.06);
+  box-shadow: 0 0 25px rgba(249, 179, 24, 0.4);
+  background-color: rgba(249, 179, 24, 0.1);
 }
 
 .btn-maggie-secondary:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px 0px #03594d;
+  box-shadow: 1px 1px 0px 0px #F9B318;
 }
 
 /* Horizontal Infinite Marquee */

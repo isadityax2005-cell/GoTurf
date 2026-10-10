@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#82eda6] text-[#03594d] selection:bg-[#ffff94] selection:text-[#03594d]">
+      <body className="min-h-full flex flex-col bg-[#030303] text-neutral-100 selection:bg-[#F9B318] selection:text-black">
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

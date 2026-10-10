@@ -9,41 +9,57 @@ import MaggieMentalLoad from '@/components/maggie/MaggieMentalLoad';
 import MaggieTurfsShowcase from '@/components/maggie/MaggieTurfsShowcase';
 import MaggieEvents from '@/components/maggie/MaggieEvents';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
+import CrystalizedBall from '@/components/ui/CrystalizedBall';
 
 export default function HomePage() {
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
 
   return (
-    <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
-      {/* 1. Maggie Navbar */}
-      <MaggieNavbar />
+    <main className="min-h-screen bg-[#030303] text-neutral-100 flex flex-col justify-between selection:bg-[#F9B318] selection:text-black relative overflow-hidden">
+      {/* Background Ambient Canvas */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20 overflow-hidden">
+        <CrystalizedBall
+          preset="nebula"
+          color="#5245F8"
+          size={1.6}
+          speed={0.4}
+          interactive={false}
+          glow={0.8}
+          haze={0.9}
+        />
+      </div>
 
-      {/* 2. Mint Hero Section with Floating Stickers & Handwriting */}
-      <MaggieHero />
+      <div className="relative z-10 flex flex-col flex-1">
+        {/* 1. Maggie Navbar */}
+        <MaggieNavbar />
 
-      {/* 3. Green Running Marquee Ticker */}
-      <MaggieMarquee variant="green" />
+        {/* 2. Mint Hero Section with Floating Stickers & Handwriting */}
+        <MaggieHero />
 
-      {/* 4. Giant Butter Yellow Statement & 3D Sports Grid */}
-      <MaggieStatement
-        selectedSport={selectedSport}
-        onSelectSport={setSelectedSport}
-      />
+        {/* 3. Green Running Marquee Ticker */}
+        <MaggieMarquee variant="green" />
 
-      {/* 5. Yellow Running Marquee Ticker */}
-      <MaggieMarquee variant="yellow" />
+        {/* 4. Giant Butter Yellow Statement & 3D Sports Grid */}
+        <MaggieStatement
+          selectedSport={selectedSport}
+          onSelectSport={setSelectedSport}
+        />
 
-      {/* 6. Squad Captain's Mental Load & GoTurf Solutions */}
-      <MaggieMentalLoad />
+        {/* 5. Yellow Running Marquee Ticker */}
+        <MaggieMarquee variant="yellow" />
 
-      {/* 7. Live Mumbai Turfs Showcase with 3D Sports Badges */}
-      <MaggieTurfsShowcase selectedSport={selectedSport} />
+        {/* 6. Squad Captain's Mental Load & GoTurf Solutions */}
+        <MaggieMentalLoad />
 
-      {/* 8. Corporate & Tournaments Showcase with 3D Championship Trophy */}
-      <MaggieEvents />
+        {/* 7. Live Mumbai Turfs Showcase with 3D Sports Badges */}
+        <MaggieTurfsShowcase selectedSport={selectedSport} />
 
-      {/* 9. Neo-Brutalist Grounded Footer with RBI/Razorpay Compliance */}
-      <MaggieFooter />
+        {/* 8. Corporate & Tournaments Showcase with 3D Championship Trophy */}
+        <MaggieEvents />
+
+        {/* 9. Neo-Brutalist Grounded Footer with RBI/Razorpay Compliance */}
+        <MaggieFooter />
+      </div>
     </main>
   );
 }
