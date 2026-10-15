@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
+import HydrationFix from "@/components/HydrationFix";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,9 +23,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#82eda6] text-[#03594d] selection:bg-[#ffff94] selection:text-[#03594d]">
+      <head>
+        <HydrationFix />
+      </head>
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-[#82eda6] text-[#03594d] selection:bg-[#ffff94] selection:text-[#03594d]"
+      >
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
