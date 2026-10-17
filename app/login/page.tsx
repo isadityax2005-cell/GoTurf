@@ -88,7 +88,13 @@ function LoginForm() {
     setIsLoading(false);
 
     if (error) {
-      setErrorMessage(error.message);
+      if (error.message.toLowerCase().includes('rate limit')) {
+        setErrorMessage(
+          'Supabase email rate limit reached (max 3/hr on free tier). Please switch to the "🔑 Password Login" tab above to sign in or create your account instantly!'
+        );
+      } else {
+        setErrorMessage(error.message);
+      }
     } else {
       setOtpSent(true);
       setSuccessMessage(`✨ A 6-digit login code and magic link have been sent to ${email}.`);
@@ -123,7 +129,7 @@ function LoginForm() {
     router.refresh();
   };
 
-  // 3. Password Sign In / Sign Up
+  // 3. Password Sign In / Sign Up (Uses server-side instant registration to bypass email rate limits)
   const handlePasswordAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -132,32 +138,45 @@ function LoginForm() {
     setErrorMessage(null);
 
     if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim() || undefined,
-            phone: phone.trim() || undefined,
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            fullName,
+            phone,
             role,
-          },
-        },
-      });
+          }),
+        });
 
-      setIsLoading(false);
-      if (error) {
-        setErrorMessage(error.message);
-        return;
-      }
+        const regData = await res.json();
+        if (!res.ok || !regData.success) {
+          setIsLoading(false);
+          setErrorMessage(regData.error || 'Failed to create account');
+          return;
+        }
 
-      if (data.user) {
-        await syncProfile(data.user.id, data.user.email || email);
-        if (data.session) {
+        // Auto sign-in immediately with the verified credentials
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+
+        setIsLoading(false);
+        if (signInError) {
+          setErrorMessage(signInError.message);
+          return;
+        }
+
+        if (signInData.user) {
           router.push(determineRedirect(role));
           router.refresh();
-        } else {
-          setSuccessMessage('🎉 Account created! Please check your email to confirm your account, or sign in.');
         }
+      } catch (err: any) {
+        setIsLoading(false);
+        setErrorMessage(err.message || 'Network error during registration');
       }
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -167,7 +186,13 @@ function LoginForm() {
 
       setIsLoading(false);
       if (error) {
-        setErrorMessage(error.message);
+        if (error.message.toLowerCase().includes('invalid login credentials')) {
+          setErrorMessage(
+            'Invalid credentials. If you haven\'t created a password for this email yet, click "Need an account? Sign up here" below.'
+          );
+        } else {
+          setErrorMessage(error.message);
+        }
         return;
       }
 
