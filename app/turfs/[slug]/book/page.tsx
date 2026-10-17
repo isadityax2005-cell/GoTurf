@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { getTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
+import { fetchTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
 import BookTurfClient from '@/components/book-turf-client';
 
 interface BookPageProps {
@@ -13,7 +13,7 @@ export function generateStaticParams() {
 
 async function BookTurfContent({ params }: BookPageProps) {
   const { slug } = await params;
-  const turf = getTurfBySlug(slug);
+  const turf = await fetchTurfBySlug(slug);
 
   if (!turf) {
     notFound();

@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DEMO_TURFS } from '@/lib/data/turfs';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import SpotlightCard from '@/components/ui/SpotlightCard';
+
+import type { Turf } from '@/types/database';
 
 interface Props {
   selectedSport: string | null;
@@ -20,8 +22,24 @@ const sportIcons: Record<string, { src: string; name: string }> = {
 
 export default function MaggieTurfsShowcase({ selectedSport }: Props) {
   const showcaseRef = useRef<HTMLElement>(null);
+  const [turfs, setTurfs] = useState<Turf[]>(DEMO_TURFS);
 
-  const filtered = DEMO_TURFS.filter((turf) => {
+  useEffect(() => {
+    async function loadLiveTurfs() {
+      try {
+        const res = await fetch('/api/turfs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.turfs) && data.turfs.length > 0) {
+          setTurfs(data.turfs);
+        }
+      } catch (err) {
+        console.warn('Failed to load live turfs from Supabase, using seed:', err);
+      }
+    }
+    loadLiveTurfs();
+  }, []);
+
+  const filtered = turfs.filter((turf) => {
     if (turf.status !== 'approved') return false;
     if (!selectedSport) return true;
     return turf.courts?.some((c) => c.sport === selectedSport && c.is_active);
@@ -71,7 +89,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
             href="/turfs"
             className="self-start sm:self-auto px-6 py-3 rounded-full bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie hover:bg-[#ffff94] hover:-translate-y-0.5 hover:shadow-maggie-lg transition-all text-xs font-black uppercase tracking-wider"
           >
-            <span>View All Arenas ({DEMO_TURFS.length}) &rarr;</span>
+            <span>View All Arenas ({turfs.length}) &rarr;</span>
           </Link>
         </div>
 

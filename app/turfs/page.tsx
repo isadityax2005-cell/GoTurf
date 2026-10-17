@@ -1,16 +1,32 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import TurfCard from '@/components/turf-card';
 import { DEMO_TURFS } from '@/lib/data/turfs';
-import type { SportType } from '@/types/database';
+import type { SportType, Turf } from '@/types/database';
 import MaggieNavbar from '@/components/maggie/Navbar';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
 
 export default function TurfsDiscoveryPage() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'all'>('all');
   const [selectedLocality, setSelectedLocality] = useState<string>('all');
+  const [turfs, setTurfs] = useState<Turf[]>(DEMO_TURFS);
+
+  useEffect(() => {
+    async function loadLiveTurfs() {
+      try {
+        const res = await fetch('/api/turfs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.turfs) && data.turfs.length > 0) {
+          setTurfs(data.turfs);
+        }
+      } catch (err) {
+        console.warn('Failed to load live turfs, falling back to seed:', err);
+      }
+    }
+    loadLiveTurfs();
+  }, []);
 
   const sportsList: { label: string; value: SportType | 'all'; iconSrc?: string; emoji?: string }[] = [
     { label: 'All Sports', value: 'all', emoji: '🏆' },
@@ -31,7 +47,7 @@ export default function TurfsDiscoveryPage() {
 
   // Strictly filter for approved, non-hidden venues
   const filteredTurfs = useMemo(() => {
-    return DEMO_TURFS.filter((turf) => {
+    return turfs.filter((turf) => {
       if (turf.status !== 'approved') return false;
 
       const matchesSport =
@@ -44,7 +60,7 @@ export default function TurfsDiscoveryPage() {
 
       return matchesSport && matchesLocality;
     });
-  }, [selectedSport, selectedLocality]);
+  }, [turfs, selectedSport, selectedLocality]);
 
   return (
     <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d] relative overflow-hidden">

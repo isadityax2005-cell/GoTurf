@@ -188,6 +188,57 @@ export function getTurfBySlug(slug: string): Turf | null {
   return pending || null;
 }
 
+export async function fetchTurfBySlug(slug: string): Promise<Turf | null> {
+  const demoFound = DEMO_TURFS.find((t) => t.slug === slug);
+  if (demoFound && demoFound.status === 'approved') return demoFound;
+
+  try {
+    const { getServiceRoleClient } = await import('@/lib/supabase');
+    const supabaseAdmin = getServiceRoleClient();
+    const { data: turf } = await (supabaseAdmin.from('turfs') as any)
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (!turf) return null;
+
+    const [{ data: region }, { data: courts }, { data: photos }] = await Promise.all([
+      (supabaseAdmin.from('regions') as any).select('*').eq('id', turf.region_id).maybeSingle(),
+      (supabaseAdmin.from('courts') as any).select('*').eq('turf_id', turf.id),
+      (supabaseAdmin.from('turf_photos') as any).select('*').eq('turf_id', turf.id),
+    ]);
+
+    return {
+      ...turf,
+      region: region || {
+        id: turf.region_id,
+        locality: 'Mumbai',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        created_at: turf.created_at,
+      },
+      courts: courts && courts.length > 0 ? courts : [
+        {
+          id: `court-${turf.id}-1`,
+          turf_id: turf.id,
+          name: 'Main Arena',
+          sport: 'cricket',
+          format: 'Box Cricket',
+          surface: 'Artificial Grass',
+          slot_minutes: 60,
+          is_active: true,
+          created_at: turf.created_at,
+          updated_at: turf.updated_at,
+        }
+      ],
+      photos: photos || [],
+    };
+  } catch (err) {
+    console.error('fetchTurfBySlug error:', err);
+    return null;
+  }
+}
+
 export function createPendingTurf(newTurf: Omit<Turf, 'id' | 'created_at' | 'updated_at' | 'status'>): Turf {
   const turf: Turf = {
     ...newTurf,

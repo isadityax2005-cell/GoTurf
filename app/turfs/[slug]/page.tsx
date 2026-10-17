@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { getTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
+import { fetchTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
 import MaggieNavbar from '@/components/maggie/Navbar';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
 
@@ -25,7 +25,7 @@ const sportImages: Record<string, { src: string; name: string }> = {
 
 async function TurfDetailContent({ params }: TurfDetailPageProps) {
   const { slug } = await params;
-  const turf = getTurfBySlug(slug);
+  const turf = await fetchTurfBySlug(slug);
 
   if (!turf) {
     notFound();
