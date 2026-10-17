@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { fetchTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
 import MaggieNavbar from '@/components/maggie/Navbar';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
+import TurfGallery from '@/components/turf-gallery';
 
 interface TurfDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -84,6 +85,13 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
               )}
             </div>
           </div>
+
+          {/* Venue Photo Gallery */}
+          <TurfGallery
+            turfName={turf.name}
+            photos={turf.photos}
+            primarySport={turf.courts?.[0]?.sport || 'cricket'}
+          />
 
           {/* Courts & Play Areas */}
           <div className="mb-10">

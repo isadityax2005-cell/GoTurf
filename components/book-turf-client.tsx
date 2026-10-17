@@ -2,8 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Turf, Court } from '@/types/database';
+import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
 import { getActiveBookingsForCourt } from '@/lib/data/bookings';
 import {
   generateCourtSlots,
@@ -461,14 +463,43 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
           </div>
         )}
 
-        {/* Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-4xl font-black text-[#03594d] tracking-tight uppercase">
-            Select Slot &bull; {turf.name}
-          </h1>
-          <p className="text-xs text-[#03594d]/80 font-bold mt-1">
-            📍 {turf.region?.locality}, Mumbai &bull; Prices shown in Indian Rupees (INR)
-          </p>
+        {/* Venue Summary & Photo Banner */}
+        <div className="mb-6 p-4 sm:p-5 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-[#03594d] shadow-maggie-sm shrink-0 bg-[#03594d]/10">
+              <Image
+                src={getTurfPhotoUrl(turf.photos?.[0], selectedCourt?.sport || 'cricket')}
+                alt={turf.name}
+                fill
+                sizes="100px"
+                className="object-cover"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d]">
+                  📍 {turf.region?.locality}, Mumbai
+                </span>
+                <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2 py-0.5 rounded-full border border-[#03594d]">
+                  ★ Verified Venue
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-[#03594d] tracking-tight uppercase">
+                {turf.name}
+              </h1>
+              <p className="text-xs text-[#03594d]/75 font-semibold line-clamp-1 mt-0.5">
+                {turf.address}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={`/turfs/${turf.slug}`}
+            className="self-stretch sm:self-auto px-4 py-2 rounded-full bg-[#f9f8f4] hover:bg-[#ffff94] border-2 border-[#03594d] text-[11px] font-black text-[#03594d] text-center shadow-maggie-sm transition-all whitespace-nowrap"
+          >
+            📸 View Full Gallery ({turf.photos?.length || 1}) &rarr;
+          </Link>
         </div>
 
         {/* Court Switcher */}

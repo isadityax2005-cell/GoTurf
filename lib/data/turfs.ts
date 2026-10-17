@@ -24,6 +24,24 @@ export const DEMO_TURFS: Turf[] = [
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
+    photos: [
+      {
+        id: 'p-bandra-1',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: 'https://images.unsplash.com/photo-1529900245534-47fbf82a44dd?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Bandra Turf Arena Floodlit Night Session',
+        sort_order: 0,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-bandra-2',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Pitch 1 High-Density AstroTurf',
+        sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+    ],
     region: {
       id: '10000000-0000-0000-0000-000000000001',
       locality: 'Bandra West',
@@ -75,6 +93,24 @@ export const DEMO_TURFS: Turf[] = [
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
+    photos: [
+      {
+        id: 'p-powai-1',
+        turf_id: '30000000-0000-0000-0000-000000000002',
+        path: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Powai Acrylic Hard Court Arena',
+        sort_order: 0,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-powai-2',
+        turf_id: '30000000-0000-0000-0000-000000000002',
+        path: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Pickleball & Tennis Pro Courts',
+        sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+    ],
     region: {
       id: '10000000-0000-0000-0000-000000000002',
       locality: 'Powai',
@@ -126,6 +162,24 @@ export const DEMO_TURFS: Turf[] = [
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
+    photos: [
+      {
+        id: 'p-andheri-1',
+        turf_id: '30000000-0000-0000-0000-000000000003',
+        path: 'https://images.unsplash.com/photo-1518604666864-742395639543?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Andheri Multi-Sport Covered Facility',
+        sort_order: 0,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-andheri-2',
+        turf_id: '30000000-0000-0000-0000-000000000003',
+        path: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Night Lights & Viewing Stand',
+        sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+    ],
     region: {
       id: '10000000-0000-0000-0000-000000000003',
       locality: 'Andheri East',

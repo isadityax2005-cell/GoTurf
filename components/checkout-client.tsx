@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Turf, Booking, PaymentMode } from '@/types/database';
+import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
 import { formatTimeIST } from '@/lib/engine/slot-calculator';
 
 interface CheckoutClientProps {
@@ -273,10 +275,19 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
             {/* Match Pass Card */}
             <div className="p-6 rounded-2xl bg-[#f9f8f4] border-2 border-[#03594d] max-w-md mx-auto mb-6 text-left text-xs space-y-3 shadow-maggie">
-              <div className="flex justify-between items-center pb-2.5 border-b-2 border-[#03594d]/15">
-                <div>
-                  <span className="text-[10px] text-[#03594d]/70 uppercase font-black">Venue</span>
-                  <p className="text-sm font-black text-[#03594d]">{turf.name}</p>
+              <div className="flex items-center gap-3 pb-3 border-b-2 border-[#03594d]/15">
+                <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-[#03594d] shadow-maggie-sm shrink-0 bg-[#03594d]/10">
+                  <Image
+                    src={getTurfPhotoUrl(turf.photos?.[0], court?.sport || 'cricket')}
+                    alt={turf.name}
+                    fill
+                    sizes="60px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <span className="text-[10px] text-[#03594d]/70 uppercase font-black block">Verified Venue</span>
+                  <p className="text-sm font-black text-[#03594d] line-clamp-1">{turf.name}</p>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-[#03594d]/70 uppercase font-black">Match PIN</span>
@@ -469,7 +480,26 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
 
                 {/* Match Details Card */}
                 <div className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie text-[#03594d]">
-                  <h2 className="text-base font-black uppercase mb-4">Match Details</h2>
+                  <div className="flex items-center gap-3.5 pb-4 mb-4 border-b-2 border-[#03594d]/15">
+                    <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#03594d] shadow-maggie-sm shrink-0 bg-[#03594d]/10">
+                      <Image
+                        src={getTurfPhotoUrl(turf.photos?.[0], court?.sport || 'cricket')}
+                        alt={turf.name}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2 py-0.5 rounded-full border border-[#03594d] inline-block mb-1">
+                        📍 {turf.region?.locality || 'Mumbai'}
+                      </span>
+                      <h2 className="text-base font-black uppercase tracking-tight line-clamp-1">{turf.name}</h2>
+                      <p className="text-[11px] font-semibold text-[#03594d]/70 line-clamp-1">{turf.address}</p>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#03594d]/70 mb-3">Session Details</h3>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between py-1.5 border-b border-[#03594d]/15">
                       <span className="text-[#03594d]/75 font-semibold">Venue</span>

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { DEMO_TURFS } from '@/lib/data/turfs';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import SpotlightCard from '@/components/ui/SpotlightCard';
+import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
 
 import type { Turf } from '@/types/database';
 
@@ -103,22 +104,39 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
               <div key={turf.id} className="turf-showcase-card h-full">
                 <SpotlightCard
                   spotlightColor="rgba(255, 255, 148, 0.45)"
-                  className="h-full bg-white text-[#03594d]"
+                  className="h-full bg-white text-[#03594d] overflow-hidden flex flex-col justify-between"
                 >
-                  <div className="p-6 flex flex-col justify-between h-full">
-                    <div>
-                      {/* Top Header: Locality & Rating */}
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
-                          📍 {turf.region?.locality}
-                        </span>
-                        <span className="text-xs font-black bg-[#f9f8f4] text-[#03594d] px-2.5 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
-                          ★ 4.9 (120+)
-                        </span>
-                      </div>
+                  {/* Photo Header */}
+                  <div className="relative w-full h-44 sm:h-48 overflow-hidden border-b-2 border-[#03594d] bg-[#03594d]/10">
+                    <Image
+                      src={getTurfPhotoUrl(turf.photos?.[0], sports[0] || 'cricket')}
+                      alt={turf.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
+                        📍 {turf.region?.locality}
+                      </span>
+                      <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
+                        ★ 4.9 Verified
+                      </span>
+                    </div>
+
+                    {(turf.photos?.length || 0) > 1 && (
+                      <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black border border-white/20">
+                        📸 {turf.photos?.length} Photos
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6 flex flex-col justify-between flex-1">
+                    <div>
                       {/* 3D Sports Available at Venue */}
-                      <div className="flex items-center gap-3 my-4">
+                      <div className="flex items-center gap-3 mb-4">
                         <div className="flex -space-x-2">
                           {sports.map((sp) => {
                             const icon = sportIcons[sp];
