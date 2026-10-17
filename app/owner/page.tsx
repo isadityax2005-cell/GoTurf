@@ -146,15 +146,21 @@ export default function OwnerDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/owner/new-turf"
-              className="px-5 py-2.5 rounded-full bg-white hover:bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] text-xs font-black uppercase tracking-wider shadow-maggie-sm transition-all"
+              className="px-5 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
             >
-              + Register New Turf
+              📸 + Register Turf & Upload Photos
             </Link>
             <Link
               href="/owner/availability"
-              className="px-5 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
+              className="px-5 py-2.5 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie-sm transition-all"
             >
               + Block Offline Time
+            </Link>
+            <Link
+              href="/admin"
+              className="px-4 py-2.5 rounded-full bg-[#ffff94] hover:bg-white text-[#03594d] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie-sm transition-all"
+            >
+              ⚡ Admin Suite
             </Link>
           </div>
         </div>

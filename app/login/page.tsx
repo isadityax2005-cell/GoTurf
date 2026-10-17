@@ -12,30 +12,39 @@ function LoginForm() {
   const redirectParam = searchParams.get('redirect');
   const errorParam = searchParams.get('error');
 
-  // Auth Method: 'otp' (Magic link / 6-digit code) or 'password'
-  const [authMethod, setAuthMethod] = useState<'otp' | 'password'>('otp');
-  const [role, setRole] = useState<UserRole>('player');
-  const [isSignUp, setIsSignUp] = useState(false);
+  // Primary Mode: 'signin' or 'signup'
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+
+  // Sign In Method: 'password' (default) or 'otp'
+  const [signInWithOtp, setSignInWithOtp] = useState(false);
 
   // Form Fields
+  const [role, setRole] = useState<UserRole>('player');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
 
-  // UI Flow States
+  // Flow State
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
-    errorParam === 'auth_failed' ? 'Authentication link expired or invalid. Please try again.' : null
+    errorParam === 'auth_failed' ? 'Login link was invalid or expired. Please sign in below.' : null
   );
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const supabase = createClient();
 
-  // Helper to sync profile into public.profiles
-  const syncProfile = async (userId: string, userEmail: string) => {
+  const determineRedirect = (targetRole: UserRole) => {
+    if (redirectParam) return redirectParam;
+    if (targetRole === 'admin') return '/admin';
+    if (targetRole === 'owner') return '/owner';
+    return '/turfs';
+  };
+
+  // Helper to sync profile details
+  const syncProfile = async (userId: string, userEmail: string, chosenRole: UserRole) => {
     try {
       await fetch('/api/auth/sync-profile', {
         method: 'POST',
@@ -45,7 +54,7 @@ function LoginForm() {
           email: userEmail,
           name: fullName || undefined,
           phone: phone || undefined,
-          role,
+          role: chosenRole,
         }),
       });
     } catch (e) {
@@ -53,14 +62,98 @@ function LoginForm() {
     }
   };
 
-  const determineRedirect = (targetRole: UserRole) => {
-    if (redirectParam) return redirectParam;
-    if (targetRole === 'admin') return '/admin';
-    if (targetRole === 'owner') return '/owner';
-    return '/turfs';
+  // 1. SIGN IN WITH PASSWORD
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      if (error.message.toLowerCase().includes('invalid login credentials')) {
+        setErrorMessage(
+          'Incorrect email or password. If you haven\'t created an account yet, click "Create New Account" above.'
+        );
+      } else {
+        setErrorMessage(error.message);
+      }
+      return;
+    }
+
+    if (data.user) {
+      const userMetaRole = (data.user.user_metadata?.role as UserRole) || 'player';
+      await syncProfile(data.user.id, cleanEmail, userMetaRole);
+      router.push(determineRedirect(userMetaRole));
+      router.refresh();
+    }
   };
 
-  // 1. Send OTP / Magic Link
+  // 2. CREATE NEW ACCOUNT (Instant via server with pre-confirmation)
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          fullName: fullName.trim(),
+          phone: phone.trim() || undefined,
+          role,
+        }),
+      });
+
+      const regData = await res.json();
+      if (!res.ok || !regData.success) {
+        setIsLoading(false);
+        setErrorMessage(regData.error || 'Failed to create account');
+        return;
+      }
+
+      // Auto-login with the newly confirmed credentials
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      setIsLoading(false);
+
+      if (signInError) {
+        setErrorMessage(signInError.message);
+        return;
+      }
+
+      if (signInData.user) {
+        router.push(determineRedirect(role));
+        router.refresh();
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || 'Network error during registration');
+    }
+  };
+
+  // 3. SEND OTP CODE
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -69,12 +162,13 @@ function LoginForm() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const cleanEmail = email.trim().toLowerCase();
     const redirectUrl = `${window.location.origin}/auth/callback${
       redirectParam ? `?next=${encodeURIComponent(redirectParam)}` : ''
     }`;
 
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       options: {
         data: {
           full_name: fullName.trim() || undefined,
@@ -90,18 +184,18 @@ function LoginForm() {
     if (error) {
       if (error.message.toLowerCase().includes('rate limit')) {
         setErrorMessage(
-          'Supabase email rate limit reached (max 3/hr on free tier). Please switch to the "🔑 Password Login" tab above to sign in or create your account instantly!'
+          'Supabase free email limit reached (max 3/hr). Please sign in using your password above!'
         );
       } else {
         setErrorMessage(error.message);
       }
     } else {
       setOtpSent(true);
-      setSuccessMessage(`✨ A 6-digit login code and magic link have been sent to ${email}.`);
+      setSuccessMessage(`✨ A 6-digit verification code was sent to ${cleanEmail}.`);
     }
   };
 
-  // 2. Verify 6-Digit OTP Code
+  // 4. VERIFY OTP CODE
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpCode || !email) return;
@@ -109,200 +203,81 @@ function LoginForm() {
     setIsLoading(true);
     setErrorMessage(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       token: otpCode.trim(),
       type: 'email',
     });
 
     if (error || !data.user) {
       setIsLoading(false);
-      setErrorMessage(error?.message || 'Invalid or expired 6-digit code. Please try again.');
+      setErrorMessage(error?.message || 'Invalid or expired 6-digit code.');
       return;
     }
 
-    await syncProfile(data.user.id, data.user.email || email);
+    const userMetaRole = (data.user.user_metadata?.role as UserRole) || role;
+    await syncProfile(data.user.id, cleanEmail, userMetaRole);
     setIsLoading(false);
 
-    const dest = determineRedirect(role);
-    router.push(dest);
+    router.push(determineRedirect(userMetaRole));
     router.refresh();
   };
 
-  // 3. Password Sign In / Sign Up (Uses server-side instant registration to bypass email rate limits)
-  const handlePasswordAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
-
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    if (isSignUp) {
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            password,
-            fullName,
-            phone,
-            role,
-          }),
-        });
-
-        const regData = await res.json();
-        if (!res.ok || !regData.success) {
-          setIsLoading(false);
-          setErrorMessage(regData.error || 'Failed to create account');
-          return;
-        }
-
-        // Auto sign-in immediately with the verified credentials
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-
-        setIsLoading(false);
-        if (signInError) {
-          setErrorMessage(signInError.message);
-          return;
-        }
-
-        if (signInData.user) {
-          router.push(determineRedirect(role));
-          router.refresh();
-        }
-      } catch (err: any) {
-        setIsLoading(false);
-        setErrorMessage(err.message || 'Network error during registration');
-      }
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      setIsLoading(false);
-      if (error) {
-        if (error.message.toLowerCase().includes('invalid login credentials')) {
-          setErrorMessage(
-            'Invalid credentials. If you haven\'t created a password for this email yet, click "Need an account? Sign up here" below.'
-          );
-        } else {
-          setErrorMessage(error.message);
-        }
-        return;
-      }
-
-      if (data.user) {
-        await syncProfile(data.user.id, data.user.email || email);
-        router.push(determineRedirect(role));
-        router.refresh();
-      }
-    }
-  };
-
   return (
-    <div className="w-full max-w-md bg-white border-2 border-[#03594d] rounded-[32px] p-8 sm:p-10 shadow-maggie-lg text-[#03594d]">
-      {/* Role Selector Tabs */}
-      <div className="flex p-1 rounded-2xl bg-[#f9f8f4] border-2 border-[#03594d] mb-6">
+    <div className="w-full max-w-md bg-white border-2 border-[#03594d] rounded-[32px] p-6 sm:p-10 shadow-maggie-lg text-[#03594d]">
+      {/* Top Primary Tabs: Sign In vs Create Account */}
+      <div className="flex p-1.5 rounded-2xl bg-[#f9f8f4] border-2 border-[#03594d] mb-6 shadow-maggie-sm">
         <button
           type="button"
           onClick={() => {
-            setRole('player');
-            setOtpSent(false);
+            setActiveTab('signin');
             setErrorMessage(null);
+            setSuccessMessage(null);
           }}
-          className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-            role === 'player'
+          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+            activeTab === 'signin'
               ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
               : 'text-[#03594d]/70 hover:text-[#03594d]'
           }`}
         >
-          ⚽ Player Account
+          Sign In
         </button>
         <button
           type="button"
           onClick={() => {
-            setRole('owner');
-            setOtpSent(false);
+            setActiveTab('signup');
             setErrorMessage(null);
+            setSuccessMessage(null);
           }}
-          className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-            role === 'owner'
-              ? 'bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm'
+          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+            activeTab === 'signup'
+              ? 'bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm font-black'
               : 'text-[#03594d]/70 hover:text-[#03594d]'
           }`}
         >
-          🏟️ Turf Owner
+          Create Account
         </button>
       </div>
 
-      {/* Header Info */}
+      {/* Header Title */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black uppercase tracking-tight text-[#03594d]">
-          {role === 'player' ? 'Welcome to GoTurf' : 'Turf Partner Portal'}
+          {activeTab === 'signin' ? 'Sign In to GoTurf' : 'Join GoTurf'}
         </h1>
         <p className="text-xs font-semibold text-[#03594d]/80 mt-1">
-          {role === 'player'
-            ? 'Sign in to book live slots across Mumbai turfs'
-            : 'Sign in to manage your turf availability, prices, and offline blocks'}
+          {activeTab === 'signin'
+            ? 'Access your match passes, bookings, or venue manager'
+            : 'Register to book live turf slots or list your sports venue'}
         </p>
       </div>
 
-      {/* Auth Mode Toggle (OTP vs Password) */}
-      <div className="flex border-b-2 border-[#03594d]/15 pb-4 mb-5 text-xs font-black">
-        <button
-          type="button"
-          onClick={() => {
-            setAuthMethod('otp');
-            setErrorMessage(null);
-          }}
-          className={`flex-1 pb-1 transition-all ${
-            authMethod === 'otp'
-              ? 'border-b-2 border-[#03594d] text-[#03594d]'
-              : 'text-[#03594d]/50 hover:text-[#03594d]'
-          }`}
-        >
-          ✨ One-Time Code / Magic Link
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setAuthMethod('password');
-            setErrorMessage(null);
-          }}
-          className={`flex-1 pb-1 transition-all ${
-            authMethod === 'password'
-              ? 'border-b-2 border-[#03594d] text-[#03594d]'
-              : 'text-[#03594d]/50 hover:text-[#03594d]'
-          }`}
-        >
-          🔑 Password Login
-        </button>
-      </div>
-
-      {/* Mode A: OTP / Magic Link */}
-      {authMethod === 'otp' && (
+      {/* TAB 1: SIGN IN FORM */}
+      {activeTab === 'signin' && (
         <>
-          {!otpSent ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div>
-                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={role === 'player' ? 'Karan Verma' : 'Rohan Mehta'}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-                />
-              </div>
-
+          {!signInWithOtp ? (
+            <form onSubmit={handleSignIn} className="space-y-4">
               <div>
                 <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
                   Email Address
@@ -318,14 +293,27 @@ function LoginForm() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                  WhatsApp / Phone Number
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-black uppercase text-[#03594d]">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignInWithOtp(true);
+                      setErrorMessage(null);
+                    }}
+                    className="text-[11px] font-bold text-[#03594d] underline hover:opacity-75"
+                  >
+                    Use email code instead
+                  </button>
+                </div>
                 <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98200 12345"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
                 />
               </div>
@@ -333,95 +321,158 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
               >
-                {isLoading ? 'Sending Code...' : 'Send Login Code & Magic Link'}
+                {isLoading ? 'Signing In...' : 'Sign In to GoTurf →'}
               </button>
             </form>
           ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d] shadow-maggie-sm">
-                📩 We sent a 6-digit code and a magic link to <strong>{email}</strong>.
-              </div>
+            // Email OTP Sign In
+            <div className="space-y-4">
+              {!otpSent ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+                      Your Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                  Enter 6-Digit Code
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="123456"
-                  className="w-full px-4 py-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-center text-lg font-mono font-black tracking-widest text-[#03594d] placeholder-[#03594d]/30 focus:outline-none focus:bg-white transition-colors"
-                />
-              </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoading ? 'Sending...' : 'Send 6-Digit Code'}
+                  </button>
 
-              <button
-                type="submit"
-                disabled={isLoading || otpCode.length < 6}
-                className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isLoading ? 'Verifying...' : 'Verify & Enter GoTurf →'}
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignInWithOtp(false)}
+                    className="w-full text-center text-xs font-bold text-[#03594d] underline"
+                  >
+                    &larr; Back to Password Login
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="p-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d]">
+                    📩 6-digit code sent to <strong>{email}</strong>
+                  </div>
 
-              <div className="flex justify-between items-center text-xs font-bold pt-1">
-                <button
-                  type="button"
-                  onClick={() => setOtpSent(false)}
-                  className="text-[#03594d] underline hover:opacity-75"
-                >
-                  &larr; Change Email
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={isLoading}
-                  className="text-[#03594d] underline hover:opacity-75 disabled:opacity-50"
-                >
-                  Resend Code
-                </button>
-              </div>
-            </form>
+                  <div>
+                    <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+                      Enter 6-Digit Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className="w-full px-4 py-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-center text-lg font-mono font-black tracking-widest text-[#03594d] placeholder-[#03594d]/30 focus:outline-none focus:bg-white transition-colors"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading || otpCode.length < 6}
+                    className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoading ? 'Verifying...' : 'Verify & Enter GoTurf →'}
+                  </button>
+
+                  <div className="flex justify-between items-center text-xs font-bold pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setOtpSent(false)}
+                      className="text-[#03594d] underline"
+                    >
+                      Change Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSignInWithOtp(false)}
+                      className="text-[#03594d] underline"
+                    >
+                      Use Password Instead
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
         </>
       )}
 
-      {/* Mode B: Password Auth */}
-      {authMethod === 'password' && (
-        <form onSubmit={handlePasswordAuth} className="space-y-4">
-          {isSignUp && (
-            <>
-              <div>
-                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={role === 'player' ? 'Karan Verma' : 'Rohan Mehta'}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-                />
-              </div>
+      {/* TAB 2: CREATE ACCOUNT FORM */}
+      {activeTab === 'signup' && (
+        <form onSubmit={handleSignUp} className="space-y-4">
+          {/* Account Role Selector */}
+          <div>
+            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+              I am joining as:
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('player')}
+                className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
+                  role === 'player'
+                    ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
+                    : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
+                }`}
+              >
+                ⚽ Player
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('owner')}
+                className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
+                  role === 'owner'
+                    ? 'bg-[#ffff94] text-[#03594d] shadow-maggie-sm'
+                    : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
+                }`}
+              >
+                🏟️ Turf Owner
+              </button>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98200 12345"
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder={role === 'player' ? 'Aditya Singh' : 'Rohan Mehta'}
+              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+              WhatsApp / Mobile Number
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91 98200 12345"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+            />
+          </div>
 
           <div>
             <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
@@ -432,14 +483,14 @@ function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@example.com"
+              placeholder="name@example.com"
               className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              Password
+              Create Password (min. 6 characters)
             </label>
             <input
               type="password"
@@ -458,31 +509,15 @@ function LoginForm() {
             className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
           >
             {isLoading
-              ? 'Authenticating...'
-              : isSignUp
-              ? 'Create Account & Sign In'
-              : 'Sign In with Password'}
+              ? 'Creating Account...'
+              : role === 'owner'
+              ? 'Create Turf Owner Account →'
+              : 'Create Player Account →'}
           </button>
-
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrorMessage(null);
-                setSuccessMessage(null);
-              }}
-              className="text-xs font-bold text-[#03594d] underline hover:opacity-75"
-            >
-              {isSignUp
-                ? 'Already have an account? Sign in instead'
-                : 'Need an account? Sign up here'}
-            </button>
-          </div>
         </form>
       )}
 
-      {/* Messages */}
+      {/* Error & Success Messages */}
       {errorMessage && (
         <div className="mt-4 p-3 rounded-xl bg-rose-100 border-2 border-rose-500 text-rose-800 text-xs font-bold text-center shadow-maggie-sm">
           ⚠️ {errorMessage}
@@ -495,7 +530,7 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Direct Portal Navigation */}
+      {/* Direct Portal Navigation Shortcuts */}
       <div className="mt-8 pt-6 border-t-2 border-[#03594d]/15 text-center">
         <span className="text-[11px] uppercase tracking-wider text-[#03594d]/70 font-black block mb-3">
           Direct Portal Navigation
@@ -553,7 +588,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
-        Passwordless Authentication &bull; Zero SMS Cost &bull; Instant Access
+        Secure Authentication &bull; Supabase Protected &bull; Instant Access
       </footer>
     </main>
   );

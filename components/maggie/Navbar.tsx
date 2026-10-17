@@ -8,27 +8,54 @@ import { createClient } from '@/lib/supabase/client';
 export default function MaggieNavbar() {
   const router = useRouter();
   const [user, setUser] = useState<{ email?: string; name?: string; role?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser({
-          email: data.user.email,
-          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
-          role: data.user.user_metadata?.role || 'player',
-        });
-      } else {
-        setUser(null);
-      }
-    });
+    async function loadUserProfile() {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          // Fetch authoritative role from public.profiles
+          const { data: profile } = await (supabase.from('profiles') as any)
+            .select('name, role, phone')
+            .eq('id', authData.user.id)
+            .maybeSingle();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+          const role = profile?.role || authData.user.user_metadata?.role || 'player';
+          const name = profile?.name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User';
+
+          setUser({
+            email: authData.user.email,
+            name,
+            role,
+          });
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Navbar user load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUserProfile();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const { data: profile } = await (supabase.from('profiles') as any)
+          .select('name, role, phone')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const role = profile?.role || session.user.user_metadata?.role || 'player';
+        const name = profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
+
         setUser({
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          role: session.user.user_metadata?.role || 'player',
+          name,
+          role,
         });
       } else {
         setUser(null);
@@ -48,23 +75,23 @@ export default function MaggieNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#82eda6]/90 backdrop-blur-md border-b-2 border-[#03594d] px-6 py-3.5 transition-all">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-[#82eda6]/90 backdrop-blur-md border-b-2 border-[#03594d] px-4 sm:px-6 py-3.5 transition-all">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="h-9 w-9 rounded-full bg-[#03594d] text-[#82eda6] flex items-center justify-center font-black text-sm shadow-maggie-sm group-hover:rotate-6 transition-transform">
             GT
           </div>
           <span className="font-black text-2xl tracking-tight text-[#03594d] lowercase">
             goturf
           </span>
-          <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
+          <span className="hidden xs:inline-block text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
             mumbai
           </span>
         </Link>
 
-        {/* Center / Right Links */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-black tracking-wider uppercase text-[#03594d]">
+        {/* Center Links (Desktop) */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-black tracking-wider uppercase text-[#03594d]">
           <Link href="/turfs" className="hover:underline underline-offset-4 transition-all">
             Venues
           </Link>
@@ -79,16 +106,37 @@ export default function MaggieNavbar() {
           </Link>
         </nav>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Action Buttons & Auth */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Role specific quick badge */}
+              {user.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-[#03594d] text-[#82eda6] rounded-full border-2 border-[#03594d] shadow-maggie-sm hover:bg-[#02463c] transition-all"
+                  title="Open Admin Control Suite"
+                >
+                  ⚡ Admin Suite
+                </Link>
+              )}
+              {user.role === 'owner' && (
+                <Link
+                  href="/owner"
+                  className="px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] rounded-full border-2 border-[#03594d] shadow-maggie-sm hover:bg-white transition-all"
+                  title="Open Turf Owner Dashboard"
+                >
+                  🏟️ Owner Portal
+                </Link>
+              )}
+
               <span className="hidden sm:inline-block text-xs font-black text-[#03594d] bg-[#ffff94] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
                 👤 {user.name}
               </span>
+
               <button
                 onClick={handleSignOut}
-                className="text-xs font-black uppercase text-[#03594d] px-3 py-1.5 hover:underline underline-offset-4 transition-all cursor-pointer"
+                className="text-xs font-black uppercase text-[#03594d] px-2.5 py-1.5 hover:underline underline-offset-4 transition-all cursor-pointer"
               >
                 Sign Out
               </button>
@@ -96,7 +144,7 @@ export default function MaggieNavbar() {
           ) : (
             <Link
               href="/login"
-              className="hidden sm:inline-block text-xs font-black uppercase text-[#03594d] px-3 py-1.5 hover:underline underline-offset-4 transition-all"
+              className="text-xs font-black uppercase text-[#03594d] px-3 py-1.5 rounded-full border-2 border-[#03594d] bg-white hover:bg-[#ffff94] shadow-maggie-sm transition-all"
             >
               Sign In
             </Link>
@@ -104,7 +152,7 @@ export default function MaggieNavbar() {
 
           <Link
             href="/turfs"
-            className="px-5 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black tracking-wider uppercase border-2 border-[#03594d] shadow-maggie hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-maggie-lg transition-all"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black tracking-wider uppercase border-2 border-[#03594d] shadow-maggie hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-maggie-lg transition-all shrink-0"
           >
             Book a Turf
           </Link>
