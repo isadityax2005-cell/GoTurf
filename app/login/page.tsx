@@ -78,12 +78,11 @@ function LoginForm() {
       password,
     });
 
-    setIsLoading(false);
-
     if (error) {
+      setIsLoading(false);
       if (error.message.toLowerCase().includes('invalid login credentials')) {
         setErrorMessage(
-          'Incorrect email or password. If you haven\'t created an account yet, click "Create New Account" above.'
+          'Incorrect email or password. If you need the Admin password, use "GoTurfAdmin2026!" or click Quick-Fill below.'
         );
       } else {
         setErrorMessage(error.message);
@@ -92,9 +91,22 @@ function LoginForm() {
     }
 
     if (data.user) {
-      const userMetaRole = (data.user.user_metadata?.role as UserRole) || 'player';
-      await syncProfile(data.user.id, cleanEmail, userMetaRole);
-      router.push(determineRedirect(userMetaRole));
+      // Fetch authoritative role from public.profiles
+      let userRole: UserRole = 'player';
+      try {
+        const { data: profile } = await (supabase.from('profiles') as any)
+          .select('role')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        userRole = profile?.role || (data.user.user_metadata?.role as UserRole) || 'player';
+      } catch {
+        userRole = (data.user.user_metadata?.role as UserRole) || 'player';
+      }
+
+      setIsLoading(false);
+      const destination = determineRedirect(userRole);
+      router.push(destination);
       router.refresh();
     }
   };
@@ -276,6 +288,31 @@ function LoginForm() {
       {/* TAB 1: SIGN IN FORM */}
       {activeTab === 'signin' && (
         <>
+          {/* Platform Admin Quick-Fill Card */}
+          <div className="p-3.5 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] shadow-maggie-sm mb-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#03594d] text-[#82eda6] px-2 py-0.5 rounded-full">
+                  👑 Platform Admin
+                </span>
+                <p className="text-xs font-black text-[#03594d] mt-1">isadityax2005@gmail.com</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('isadityax2005@gmail.com');
+                  setPassword('GoTurfAdmin2026!');
+                  setSignInWithOtp(false);
+                  setErrorMessage(null);
+                  setSuccessMessage('✨ Admin credentials pre-filled. Click Sign In below!');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#82eda6] text-[#03594d] border-2 border-[#03594d] text-xs font-black uppercase shadow-maggie-sm transition-all cursor-pointer shrink-0"
+              >
+                Quick-Fill ⚡
+              </button>
+            </div>
+          </div>
+
           {!signInWithOtp ? (
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
@@ -303,9 +340,9 @@ function LoginForm() {
                       setSignInWithOtp(true);
                       setErrorMessage(null);
                     }}
-                    className="text-[11px] font-bold text-[#03594d] underline hover:opacity-75"
+                    className="text-[11px] font-bold text-[#03594d] underline hover:opacity-75 cursor-pointer"
                   >
-                    Use email code instead
+                    Use magic link email instead
                   </button>
                 </div>
                 <input
@@ -538,16 +575,24 @@ function LoginForm() {
         <div className="flex gap-2">
           <Link
             href="/owner"
-            className="flex-1 py-2 px-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-colors"
+            className="flex-1 py-2 px-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-colors text-center"
           >
-            Owner Portal &rarr;
+            🏟️ Owner Portal &rarr;
           </Link>
-          <Link
-            href="/admin"
-            className="flex-1 py-2 px-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-colors"
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('signin');
+              setSignInWithOtp(false);
+              setEmail('isadityax2005@gmail.com');
+              setPassword('GoTurfAdmin2026!');
+              setErrorMessage(null);
+              setSuccessMessage('👑 Admin credentials loaded. Click "Sign In to GoTurf" above!');
+            }}
+            className="flex-1 py-2 px-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-black text-[#03594d] hover:bg-white shadow-maggie-sm transition-colors cursor-pointer text-center"
           >
-            Admin Suite &rarr;
-          </Link>
+            ⚡ Admin Sign-In &rarr;
+          </button>
         </div>
       </div>
     </div>

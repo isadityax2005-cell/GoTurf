@@ -36,6 +36,15 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
+
+  // 1. If Supabase ever redirects to /?code=..., auto-forward to /auth/callback
+  const code = searchParams.get('code');
+  if (code && pathname !== '/auth/callback') {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = '/auth/callback';
+    return NextResponse.redirect(callbackUrl);
+  }
 
   const isOwnerRoute = pathname.startsWith('/owner');
   const isAdminRoute = pathname.startsWith('/admin');
@@ -56,7 +65,9 @@ export async function updateSession(request: NextRequest) {
         .eq('id', user.id)
         .single();
 
-      const userRole = ((profile as unknown as { role?: UserRole } | null)?.role as UserRole) || 'player';
+      const userRole =
+        ((profile as unknown as { role?: UserRole } | null)?.role as UserRole) ||
+        ((user.user_metadata?.role as UserRole) || 'player');
 
       if (isAdminRoute && userRole !== 'admin') {
         const url = request.nextUrl.clone();
