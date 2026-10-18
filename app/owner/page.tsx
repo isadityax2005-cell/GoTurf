@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import type { Turf } from '@/types/database';
 
 interface ArrivalBooking {
   id: string;
@@ -17,6 +20,25 @@ interface ArrivalBooking {
 
 export default function OwnerDashboardPage() {
   const [notification, setNotification] = useState<string | null>(null);
+  const [myTurfs, setMyTurfs] = useState<Turf[]>([]);
+  const [loadingTurfs, setLoadingTurfs] = useState(true);
+
+  useEffect(() => {
+    async function loadOwnerTurfs() {
+      try {
+        const res = await fetch('/api/owner/my-turfs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.turfs)) {
+          setMyTurfs(data.turfs);
+        }
+      } catch (err) {
+        console.warn('Failed to load owner turfs:', err);
+      } finally {
+        setLoadingTurfs(false);
+      }
+    }
+    loadOwnerTurfs();
+  }, []);
 
   // Today's matchday bookings arriving at the venue
   const [arrivals, setArrivals] = useState<ArrivalBooking[]>([
@@ -43,16 +65,6 @@ export default function OwnerDashboardPage() {
       balanceStatus: 'unpaid',
     },
   ]);
-
-  const ownerTurf = {
-    name: 'Bandra Turf Arena [Demo]',
-    locality: 'Bandra West, Mumbai',
-    status: 'approved',
-    courts: [
-      { name: 'Court 1 - Box Cricket', sport: 'Box Cricket', hours: '06:00 - 23:00', price: '₹1,200 - ₹1,800/hr' },
-      { name: 'Arena B - Football', sport: '5-a-side Football', hours: '06:00 - 23:00', price: '₹1,400 - ₹2,000/hr' },
-    ],
-  };
 
   const handleCollectBalance = async (booking: ArrivalBooking, method: 'cash' | 'venue_upi') => {
     try {
@@ -99,33 +111,38 @@ export default function OwnerDashboardPage() {
             </div>
             <span className="font-black text-2xl tracking-tight text-[#03594d] lowercase">goturf</span>
           </Link>
-          <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
-            Owner Dashboard
+          <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm">
+            Owner Control Suite
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-bold">
-          <span className="text-[#03594d]/80 hidden sm:inline">Rohan Mehta (Bandra Turf Arena)</span>
+        <div className="flex items-center gap-3 text-xs font-black">
+          <Link
+            href="/admin"
+            className="px-4 py-2 rounded-full bg-[#ffff94] hover:bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm transition-all uppercase text-[11px]"
+          >
+            ⚡ Admin Control Suite
+          </Link>
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-full bg-white border-2 border-[#03594d] text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm transition-all"
+            className="px-4 py-2 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm transition-all uppercase text-[11px]"
           >
-            Sign Out
+            Switch Account
           </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-6xl w-full mx-auto px-6 py-10 flex-1">
-        {/* Toast Notification */}
+      {/* Main Container */}
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 flex-1">
+        {/* Toast Alert */}
         {notification && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d] flex justify-between items-center shadow-maggie animate-in fade-in">
+          <div className="mb-6 p-4 rounded-2xl bg-white border-2 border-[#03594d] shadow-maggie flex items-center justify-between text-xs font-bold text-[#03594d] animate-in fade-in">
             <span>{notification}</span>
             <button
               onClick={() => setNotification(null)}
-              className="text-[#03594d] hover:text-black font-black text-sm ml-4 cursor-pointer"
+              className="text-[#03594d] hover:underline font-black cursor-pointer text-xs ml-4"
             >
-              &times;
+              Dismiss
             </button>
           </div>
         )}
@@ -133,14 +150,14 @@ export default function OwnerDashboardPage() {
         {/* Welcome Banner */}
         <div className="p-6 sm:p-8 rounded-[32px] bg-white border-2 border-[#03594d] shadow-maggie mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[#03594d]">
           <div>
+            <div className="inline-flex items-center gap-2 bg-[#ffff94] text-[#03594d] px-3 py-0.5 rounded-full border border-[#03594d] text-[10px] font-black uppercase tracking-wider mb-2">
+              <span>🏟️ Venue Partner Console</span>
+            </div>
             <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#03594d]">
-              {ownerTurf.name}
+              Turf Operations Hub
             </h1>
             <p className="text-xs text-[#03594d]/80 font-bold mt-1">
-              📍 {ownerTurf.locality} &bull; Status:{' '}
-              <span className="bg-[#82eda6] px-2 py-0.5 rounded-full border border-[#03594d] uppercase font-black text-[10px]">
-                {ownerTurf.status}
-              </span>
+              Manage your grounds, view real-time gate check-ins, and register new venues directly in Supabase.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -148,7 +165,7 @@ export default function OwnerDashboardPage() {
               href="/owner/new-turf"
               className="px-5 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
             >
-              📸 + Register Turf & Upload Photos
+              📸 + Register New Turf
             </Link>
             <Link
               href="/owner/availability"
@@ -156,13 +173,109 @@ export default function OwnerDashboardPage() {
             >
               + Block Offline Time
             </Link>
+          </div>
+        </div>
+
+        {/* REGISTERED VENUES FROM SUPABASE */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-tight text-[#03594d]">
+                Your Live Venues in Supabase ({myTurfs.length})
+              </h2>
+              <p className="text-xs text-[#03594d]/80 font-bold">
+                Real-time status of grounds linked to your owner account
+              </p>
+            </div>
             <Link
-              href="/admin"
-              className="px-4 py-2.5 rounded-full bg-[#ffff94] hover:bg-white text-[#03594d] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie-sm transition-all"
+              href="/owner/new-turf"
+              className="text-xs font-black underline hover:opacity-80 text-[#03594d]"
             >
-              ⚡ Admin Suite
+              + Add Venue
             </Link>
           </div>
+
+          {loadingTurfs ? (
+            <div className="p-8 rounded-3xl bg-white border-2 border-[#03594d] text-center font-bold text-xs text-[#03594d]">
+              Loading venues from Supabase database...
+            </div>
+          ) : myTurfs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {myTurfs.map((turf) => {
+                const photoUrl = getTurfPhotoUrl(turf.photos?.[0], turf.courts?.[0]?.sport || 'cricket');
+                const isApproved = turf.status === 'approved';
+
+                return (
+                  <div
+                    key={turf.id}
+                    className="p-5 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie flex flex-col justify-between gap-4 text-[#03594d]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#03594d] shadow-maggie-sm shrink-0 bg-[#03594d]/10">
+                        <Image
+                          src={photoUrl}
+                          alt={turf.name}
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border border-[#03594d] ${
+                              isApproved ? 'bg-[#82eda6]' : 'bg-[#ffff94]'
+                            }`}
+                          >
+                            {isApproved ? '✓ Live & Bookable' : '⏳ Pending Review'}
+                          </span>
+                          <span className="text-[10px] text-[#03594d]/70 font-bold">
+                            📍 {turf.region?.locality || (turf as any).locality || 'Mumbai'}
+                          </span>
+                        </div>
+                        <h3 className="font-black text-lg uppercase tracking-tight">{turf.name}</h3>
+                        <p className="text-xs text-[#03594d]/75 font-semibold line-clamp-1">{turf.address}</p>
+                        <p className="text-xs font-bold text-[#03594d] mt-1">
+                          {turf.courts?.length || 1} Active Court{(turf.courts?.length || 1) === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t-2 border-[#03594d]/15 flex items-center justify-between text-xs font-black">
+                      <Link
+                        href={`/turfs/${turf.slug}`}
+                        className="text-[#03594d] hover:underline flex items-center gap-1"
+                      >
+                        <span>Preview Venue Page</span>
+                        <span>&rarr;</span>
+                      </Link>
+
+                      <Link
+                        href="/owner/availability"
+                        className="px-3 py-1.5 rounded-xl bg-[#f9f8f4] hover:bg-[#ffff94] border border-[#03594d] text-[11px] uppercase tracking-wider"
+                      >
+                        Calendar & Blocks
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-8 rounded-3xl bg-white border-2 border-[#03594d] text-center max-w-md mx-auto shadow-maggie">
+              <span className="text-3xl block mb-2">🏟️</span>
+              <h3 className="font-black text-sm uppercase mb-1">No Venues Registered Yet</h3>
+              <p className="text-xs font-semibold text-[#03594d]/75 mb-4">
+                You haven&apos;t registered any turfs under this account.
+              </p>
+              <Link
+                href="/owner/new-turf"
+                className="px-6 py-2.5 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider shadow-maggie inline-block"
+              >
+                Register Your First Turf &rarr;
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* TODAY'S MATCH ARRIVALS & BALANCE COLLECTION CONSOLE */}
@@ -250,42 +363,6 @@ export default function OwnerDashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Courts Section */}
-        <div className="mb-10">
-          <h2 className="text-xl font-black uppercase tracking-tight text-[#03594d] mb-4">
-            Your Courts & Availability
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {ownerTurf.courts.map((court) => (
-              <div
-                key={court.name}
-                className="p-6 rounded-[28px] bg-white border-2 border-[#03594d] shadow-maggie text-[#03594d]"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-black text-[#03594d] text-base">{court.name}</h3>
-                  <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#ffff94] text-[#03594d] border border-[#03594d]">
-                    {court.sport}
-                  </span>
-                </div>
-                <p className="text-xs text-[#03594d]/80 font-bold">🕒 Operating Hours: {court.hours}</p>
-                <p className="text-xs text-[#03594d] mt-1 font-black">💰 Rates: {court.price}</p>
-
-                <div className="mt-4 pt-3 border-t-2 border-[#03594d]/10 flex gap-2">
-                  <button className="text-xs text-[#03594d] font-black uppercase px-3 py-1 rounded-lg bg-[#f9f8f4] border border-[#03594d] hover:bg-[#ffff94]">
-                    Edit Hours
-                  </button>
-                  <button className="text-xs text-[#03594d] font-black uppercase px-3 py-1 rounded-lg bg-[#f9f8f4] border border-[#03594d] hover:bg-[#ffff94]">
-                    Price Rules
-                  </button>
-                  <Link href="/owner/availability" className="text-xs text-[#82eda6] font-black uppercase px-3 py-1 rounded-lg bg-[#03594d] border border-[#03594d] hover:bg-[#02463c]">
-                    View Schedule
-                  </Link>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

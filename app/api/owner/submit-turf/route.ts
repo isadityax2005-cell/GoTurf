@@ -29,8 +29,21 @@ export async function POST(request: Request) {
 
     const supabaseAdmin = getServiceRoleClient();
 
-    // 1. Resolve owner ID (fallback to pre-seeded owner or first found admin/owner if not specified)
+    // 1. Resolve owner ID (from request body, auth session, or owner profile)
     let finalOwnerId = ownerId;
+    if (!finalOwnerId) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server');
+        const authSupabase = await createClient();
+        const { data: { user } } = await authSupabase.auth.getUser();
+        if (user?.id) {
+          finalOwnerId = user.id;
+        }
+      } catch (authErr) {
+        console.warn('Session owner resolution fallback:', authErr);
+      }
+    }
+
     if (!finalOwnerId) {
       const { data: firstOwner } = await (supabaseAdmin.from('profiles') as any)
         .select('id')
@@ -38,6 +51,23 @@ export async function POST(request: Request) {
         .limit(1)
         .single();
       finalOwnerId = firstOwner?.id || '20000000-0000-0000-0000-000000000002';
+    }
+
+    // Ensure owner profile exists
+    if (finalOwnerId) {
+      const { data: existingProfile } = await (supabaseAdmin.from('profiles') as any)
+        .select('id')
+        .eq('id', finalOwnerId)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        await (supabaseAdmin.from('profiles') as any).upsert({
+          id: finalOwnerId,
+          role: 'owner',
+          name: name ? `${name} Partner` : 'Turf Owner',
+          phone: contactNumber || null,
+        });
+      }
     }
 
     // 2. Resolve or find Region ID

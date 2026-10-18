@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { fetchTurfBySlug, DEMO_TURFS } from '@/lib/data/turfs';
+import { fetchTurfBySlug, fetchLiveApprovedTurfs, DEMO_TURFS } from '@/lib/data/turfs';
 import MaggieNavbar from '@/components/maggie/Navbar';
 import MaggieFooter from '@/components/maggie/MaggieFooter';
 import TurfGallery from '@/components/turf-gallery';
@@ -11,10 +11,29 @@ interface TurfDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return DEMO_TURFS.map((turf) => ({
-    slug: turf.slug,
-  }));
+export async function generateStaticParams() {
+  try {
+    const turfs = await fetchLiveApprovedTurfs();
+    return turfs.map((turf) => ({
+      slug: turf.slug,
+    }));
+  } catch {
+    return DEMO_TURFS.map((turf) => ({
+      slug: turf.slug,
+    }));
+  }
+}
+
+export async function generateMetadata({ params }: TurfDetailPageProps) {
+  const { slug } = await params;
+  const turf = await fetchTurfBySlug(slug);
+  if (!turf) {
+    return { title: 'Venue Not Found | GoTurf' };
+  }
+  return {
+    title: `${turf.name} • ${turf.region?.locality || 'Mumbai'} | GoTurf`,
+    description: `Book sports slots at ${turf.name} in ${turf.region?.locality || 'Mumbai'}. Verified venue with real ground photos, continuous slots, and instant booking.`,
+  };
 }
 
 const sportImages: Record<string, { src: string; name: string }> = {

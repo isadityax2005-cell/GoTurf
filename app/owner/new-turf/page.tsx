@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
 import type { SportType } from '@/types/database';
 
 export default function NewTurfRegistrationPage() {
@@ -11,6 +12,23 @@ export default function NewTurfRegistrationPage() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
+  const [submittedTurf, setSubmittedTurf] = useState<{ id: string; name: string; slug: string; status: string; owner_id: string } | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUser({ id: user.id, email: user.email });
+        }
+      } catch (err) {
+        console.warn('Could not read user in new-turf page:', err);
+      }
+    }
+    checkAuth();
+  }, []);
 
   // Form State
   const [name, setName] = useState('');
@@ -106,11 +124,13 @@ export default function NewTurfRegistrationPage() {
           lat,
           lng,
           photos: photoUrls,
+          ownerId: currentUser?.id,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
+        setSubmittedTurf(data.turf);
         setIsDone(true);
       } else {
         setNotification(`⚠️ ${data.error || 'Failed to submit turf registration'}`);
@@ -135,9 +155,33 @@ export default function NewTurfRegistrationPage() {
           <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#03594d] mb-2">
             Submitted for Verification!
           </h1>
-          <p className="text-xs text-[#03594d]/80 font-bold mb-6 leading-relaxed">
+          <p className="text-xs text-[#03594d]/80 font-bold mb-4 leading-relaxed">
             Your venue <strong>{name}</strong> and {photoUrls.length} uploaded photo{photoUrls.length === 1 ? '' : 's'} have been safely recorded in Supabase with status <span className="bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d] font-black uppercase">Pending</span>. It is now queued in the Admin Suite for verification before going live.
           </p>
+
+          {/* Database Confirmation Card */}
+          <div className="p-4 rounded-2xl bg-[#f9f8f4] border border-[#03594d]/20 text-left text-xs mb-6 space-y-1.5 font-bold">
+            <div className="flex justify-between">
+              <span className="text-[#03594d]/70">Venue Name:</span>
+              <span className="text-[#03594d] font-black">{submittedTurf?.name || name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#03594d]/70">Locality:</span>
+              <span>{locality}, Mumbai</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#03594d]/70">Status:</span>
+              <span className="bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d] text-[10px] font-black uppercase">
+                {submittedTurf?.status || 'pending'}
+              </span>
+            </div>
+            {submittedTurf?.owner_id && (
+              <div className="flex justify-between">
+                <span className="text-[#03594d]/70">Linked Owner ID:</span>
+                <span className="font-mono text-[10px] truncate max-w-[180px]">{submittedTurf.owner_id}</span>
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-col gap-3">
             <Link

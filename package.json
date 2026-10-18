@@ -13,7 +13,8 @@
     "verify:phase4": "tsx scripts/verify-phase4-slots.ts",
     "verify:phase5": "tsx scripts/verify-phase5-concurrency-race.ts",
     "verify:phase6": "tsx scripts/verify-phase6-payments.ts",
-    "verify:phase7": "tsx scripts/verify-phase7-token-advance.ts"
+    "verify:phase7": "tsx scripts/verify-phase7-token-advance.ts",
+    "verify:phase2-live": "tsx scripts/verify-phase2-database.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

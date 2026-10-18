@@ -242,10 +242,77 @@ export function getTurfBySlug(slug: string): Turf | null {
   return pending || null;
 }
 
-export async function fetchTurfBySlug(slug: string): Promise<Turf | null> {
-  const demoFound = DEMO_TURFS.find((t) => t.slug === slug);
-  if (demoFound && demoFound.status === 'approved') return demoFound;
+export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
+  try {
+    const { getServiceRoleClient } = await import('@/lib/supabase');
+    const supabaseAdmin = getServiceRoleClient();
 
+    const { data: dbTurfs, error: tErr } = await (supabaseAdmin.from('turfs') as any)
+      .select('*')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (tErr) {
+      console.warn('fetchLiveApprovedTurfs Supabase error, falling back:', tErr);
+      return DEMO_TURFS.filter((t) => t.status === 'approved');
+    }
+
+    const [{ data: regions }, { data: courts }, { data: photos }] = await Promise.all([
+      (supabaseAdmin.from('regions') as any).select('*'),
+      (supabaseAdmin.from('courts') as any).select('*'),
+      (supabaseAdmin.from('turf_photos') as any).select('*').order('sort_order', { ascending: true }),
+    ]);
+
+    const regionMap = new Map((regions || []).map((r: any) => [r.id, r]));
+
+    const enrichedDbTurfs: Turf[] = (dbTurfs || []).map((t: any) => {
+      const region = regionMap.get(t.region_id) || {
+        id: t.region_id,
+        locality: 'Mumbai',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        created_at: t.created_at,
+      };
+
+      const turfCourts = (courts || []).filter((c: any) => c.turf_id === t.id);
+      const turfPhotos = (photos || []).filter((p: any) => p.turf_id === t.id);
+
+      return {
+        ...t,
+        region,
+        courts: turfCourts.length > 0 ? turfCourts : [
+          {
+            id: `court-${t.id}-1`,
+            turf_id: t.id,
+            name: 'Main Arena',
+            sport: 'cricket' as const,
+            format: 'Box Cricket',
+            surface: 'Artificial Grass',
+            slot_minutes: 60,
+            is_active: true,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
+          }
+        ],
+        photos: turfPhotos,
+      };
+    });
+
+    if (enrichedDbTurfs.length > 0) {
+      const dbIds = new Set(enrichedDbTurfs.map((t) => t.id));
+      const dbSlugs = new Set(enrichedDbTurfs.map((t) => t.slug));
+      const fallbackDemos = DEMO_TURFS.filter((d) => !dbIds.has(d.id) && !dbSlugs.has(d.slug));
+      return [...enrichedDbTurfs, ...fallbackDemos];
+    }
+
+    return DEMO_TURFS.filter((t) => t.status === 'approved');
+  } catch (err) {
+    console.error('fetchLiveApprovedTurfs exception:', err);
+    return DEMO_TURFS.filter((t) => t.status === 'approved');
+  }
+}
+
+export async function fetchTurfBySlug(slug: string): Promise<Turf | null> {
   try {
     const { getServiceRoleClient } = await import('@/lib/supabase');
     const supabaseAdmin = getServiceRoleClient();
@@ -254,43 +321,49 @@ export async function fetchTurfBySlug(slug: string): Promise<Turf | null> {
       .eq('slug', slug)
       .maybeSingle();
 
-    if (!turf) return null;
+    if (turf && turf.status === 'approved') {
+      const [{ data: region }, { data: courts }, { data: photos }] = await Promise.all([
+        (supabaseAdmin.from('regions') as any).select('*').eq('id', turf.region_id).maybeSingle(),
+        (supabaseAdmin.from('courts') as any).select('*').eq('turf_id', turf.id),
+        (supabaseAdmin.from('turf_photos') as any).select('*').eq('turf_id', turf.id).order('sort_order', { ascending: true }),
+      ]);
 
-    const [{ data: region }, { data: courts }, { data: photos }] = await Promise.all([
-      (supabaseAdmin.from('regions') as any).select('*').eq('id', turf.region_id).maybeSingle(),
-      (supabaseAdmin.from('courts') as any).select('*').eq('turf_id', turf.id),
-      (supabaseAdmin.from('turf_photos') as any).select('*').eq('turf_id', turf.id),
-    ]);
-
-    return {
-      ...turf,
-      region: region || {
-        id: turf.region_id,
-        locality: 'Mumbai',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        created_at: turf.created_at,
-      },
-      courts: courts && courts.length > 0 ? courts : [
-        {
-          id: `court-${turf.id}-1`,
-          turf_id: turf.id,
-          name: 'Main Arena',
-          sport: 'cricket',
-          format: 'Box Cricket',
-          surface: 'Artificial Grass',
-          slot_minutes: 60,
-          is_active: true,
+      return {
+        ...turf,
+        region: region || {
+          id: turf.region_id,
+          locality: 'Mumbai',
+          city: 'Mumbai',
+          state: 'Maharashtra',
           created_at: turf.created_at,
-          updated_at: turf.updated_at,
-        }
-      ],
-      photos: photos || [],
-    };
+        },
+        courts: courts && courts.length > 0 ? courts : [
+          {
+            id: `court-${turf.id}-1`,
+            turf_id: turf.id,
+            name: 'Main Arena',
+            sport: 'cricket',
+            format: 'Box Cricket',
+            surface: 'Artificial Grass',
+            slot_minutes: 60,
+            is_active: true,
+            created_at: turf.created_at,
+            updated_at: turf.updated_at,
+          }
+        ],
+        photos: photos || [],
+      };
+    }
   } catch (err) {
-    console.error('fetchTurfBySlug error:', err);
-    return null;
+    console.warn('fetchTurfBySlug Supabase query warning, falling back to local store:', err);
   }
+
+  // Fallback to local store if not found in Supabase
+  const demoFound = DEMO_TURFS.find((t) => t.slug === slug);
+  if (demoFound && demoFound.status === 'approved') return demoFound;
+
+  const pending = pendingStore.find((t) => t.slug === slug);
+  return pending || null;
 }
 
 export function createPendingTurf(newTurf: Omit<Turf, 'id' | 'created_at' | 'updated_at' | 'status'>): Turf {
