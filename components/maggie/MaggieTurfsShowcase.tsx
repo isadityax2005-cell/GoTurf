@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { DEMO_TURFS } from '@/lib/data/turfs';
 import { gsap } from '@/lib/gsap';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import {
@@ -25,24 +24,22 @@ const sportIcons: Record<string, { src: string; name: string }> = {
 
 export default function MaggieTurfsShowcase({ selectedSport }: Props) {
   const showcaseRef = useRef<HTMLElement>(null);
-  const [turfs, setTurfs] = useState<Turf[]>(DEMO_TURFS);
+  const [turfs, setTurfs] = useState<Turf[]>([]);
+  const [loading, setLoading] = useState(true);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function loadLiveTurfs() {
       try {
-        const res = await fetch('/api/turfs');
+        const res = await fetch('/api/turfs?mode=live');
         const data = await res.json();
         if (data.success && Array.isArray(data.turfs)) {
-          if (data.turfs.length > 0) {
-            setTurfs(data.turfs);
-          } else {
-            // Live catalogue has 0 venues yet, show interactive Mumbai demo previews
-            setTurfs(DEMO_TURFS.filter((t) => t.status === 'approved'));
-          }
+          setTurfs(data.turfs);
         }
       } catch (err) {
-        console.warn('Failed to load live turfs from Supabase, using seed:', err);
+        console.warn('Failed to load live turfs from Supabase:', err);
+      } finally {
+        setLoading(false);
       }
     }
     loadLiveTurfs();
@@ -102,8 +99,37 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
           </Link>
         </div>
 
-        {/* Turf Cards Grid with adapted SpotlightCard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Turf Cards Grid or Intentional Empty State */}
+        {loading ? (
+          <div className="p-12 text-center text-sm font-black text-[#03594d]">
+            Loading verified Mumbai venues...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 sm:p-14 rounded-3xl bg-white border-2 border-[#03594d] shadow-maggie text-center max-w-xl mx-auto">
+            <span className="text-5xl block mb-4">🏟️</span>
+            <h3 className="text-xl sm:text-2xl font-black text-[#03594d] tracking-tight uppercase mb-2">
+              New Mumbai Arenas Launching Soon
+            </h3>
+            <p className="text-xs sm:text-sm font-semibold text-[#03594d]/80 mb-6 max-w-md mx-auto leading-relaxed">
+              We&apos;re currently reviewing newly submitted venues from ground owners across Mumbai. Are you a turf owner? Register your arena in the Owner Portal to start accepting bookings.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/owner/new-turf"
+                className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all"
+              >
+                + Register Arena (Owner Portal) &rarr;
+              </Link>
+              <Link
+                href="/turfs?mode=demo"
+                className="w-full sm:w-auto px-6 py-3 rounded-full bg-white text-[#03594d] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie-sm hover:bg-[#ffff94] transition-all"
+              >
+                ✨ Explore Interactive Demo
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((turf) => {
             const courts = turf.courts || [];
             const sports = Array.from(new Set(courts.map((c) => c.sport)));
@@ -239,6 +265,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
             );
           })}
         </div>
+      )}
       </div>
     </section>
   );

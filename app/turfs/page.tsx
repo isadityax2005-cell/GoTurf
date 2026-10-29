@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 async function TurfsDiscoveryContent() {
-  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.GOTURF_DEMO_ONLY === 'true';
+  const isDemo = process.env.GOTURF_DEMO_ONLY === 'true';
   const initialMode = isDemo ? 'demo' : 'live';
   const turfs = await fetchLiveApprovedTurfs(initialMode);
   return <TurfsDiscoveryClient initialTurfs={turfs} initialMode={initialMode} />;

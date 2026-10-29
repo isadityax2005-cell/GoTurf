@@ -52,7 +52,7 @@ async function runVerification() {
     resetBookingsForTesting([]);
     resetPaymentsForTesting();
 
-    const courtId = '40000000-0000-0000-0000-000000000001';
+    const courtId = '40000000-0000-0000-0000-000000000007'; // Kurla Cage 1 (retained approved demo venue)
     const baseTime = new Date(Date.now() + 36 * 60 * 60 * 1000);
     baseTime.setUTCMinutes(0, 0, 0);
     const startAtUTC = baseTime.toISOString();
@@ -251,6 +251,24 @@ async function runVerification() {
     }
     console.log('  ✓ Fabricated fallback IDs (demo-hold, demo_hold) strictly rejected with 400');
 
+    // 3a2. Holding an unpublished venue court must be rejected with 400 VENUE_UNPUBLISHED
+    const unpubHoldRes = await postHoldRoute(
+      new Request('http://localhost:3000/api/bookings/hold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courtId: '40000000-0000-0000-0000-000000000001', // Bandra Turf Arena (status: hidden)
+          startAtUTC,
+          endAtUTC,
+          pricePaise: 180000,
+        }),
+      })
+    );
+    assert.strictEqual(unpubHoldRes.status, 400, 'Unpublished venue court hold must be rejected with 400');
+    const unpubData = await unpubHoldRes.json();
+    assert.strictEqual(unpubData.code, 'VENUE_UNPUBLISHED');
+    console.log('  ✓ Direct booking hold for unpublished venue strictly rejected with 400 VENUE_UNPUBLISHED');
+
     // 3b. Tamper with payload of a valid gt_bk token (attempting to lower price_paise from 180000 to 100)
     const tokenParts = holdToken.split('.');
     const decodedPayload = JSON.parse(Buffer.from(tokenParts[1], 'base64url').toString('utf8'));
@@ -389,11 +407,13 @@ async function runVerification() {
     delete env.SUPABASE_SERVICE_ROLE_KEY;
 
     const demoTurfs = await getApprovedTurfs();
-    assert.strictEqual(demoTurfs.length, 5, 'Demo mode getApprovedTurfs() must return the 5 demo turfs without touching Supabase');
+    assert.strictEqual(demoTurfs.length, 2, 'Demo mode getApprovedTurfs() must return the 2 retained approved demo turfs without touching Supabase');
     assert.ok(demoTurfs.every((t) => t.is_demo === true), 'All returned turfs in demo mode must have is_demo=true');
 
+    // Bandra Turf Arena is unpublished/hidden, so it must return null from public lookup
     const bandra = await getTurfBySlug('bandra-turf-arena-demo');
-    assert.ok(bandra && bandra.is_demo === true && bandra.photos?.length === 6, 'getTurfBySlug in demo mode must resolve Bandra with 6 pilot photos');
+    assert.strictEqual(bandra, null, 'Unpublished Bandra demo turf must not resolve from public getTurfBySlug');
+
     const kurla = await getTurfBySlug('kurla-cage-arena-demo');
     assert.ok(kurla && kurla.is_demo === true, 'getTurfBySlug in demo mode must resolve Kurla Cage Arena [Demo] locally');
     const juhu = await getTurfBySlug('juhu-sunrise-padel-demo');
@@ -401,7 +421,7 @@ async function runVerification() {
 
     const apiTurfsRes = await getTurfsRoute();
     const apiTurfsData = await apiTurfsRes.json();
-    assert.strictEqual(apiTurfsData.turfs.length, 5, 'GET /api/turfs in demo mode must not query live Supabase');
+    assert.strictEqual(apiTurfsData.turfs.length, 2, 'GET /api/turfs in demo mode must return active approved demo turfs without live Supabase');
 
     // Verify broken Unsplash URLs are replaced with local illustrative fallback WebP assets
     const broken1 = getTurfPhotoUrl('https://images.unsplash.com/photo-1529900245534-47fbf82a44dd?w=1000', 'cricket');

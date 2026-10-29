@@ -20,10 +20,13 @@ interface ArrivalBooking {
 }
 
 export default function OwnerDashboardPage() {
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [myTurfs, setMyTurfs] = useState<Turf[]>([]);
   const [loadingTurfs, setLoadingTurfs] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<string>('owner');
+  // Today's matchday bookings arriving at the venue
+  const [arrivals, setArrivals] = useState<ArrivalBooking[]>([]);
 
   useEffect(() => {
     async function loadOwnerTurfs() {
@@ -31,6 +34,7 @@ export default function OwnerDashboardPage() {
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
+          setCurrentUser({ id: authData.user.id, email: authData.user.email });
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -55,32 +59,6 @@ export default function OwnerDashboardPage() {
     loadOwnerTurfs();
   }, []);
 
-  // Today's matchday bookings arriving at the venue
-  const [arrivals, setArrivals] = useState<ArrivalBooking[]>([
-    {
-      id: 'booking-preseeded-1',
-      captain: 'Karan Verma',
-      phone: '+91 98200 11223',
-      court: 'Court 1 - Box Cricket',
-      timeSlot: '06:00 PM – 07:00 PM',
-      paidOnline: 245,
-      balanceDue: 1600,
-      pin: '4821',
-      balanceStatus: 'unpaid',
-    },
-    {
-      id: 'booking-demo-arriving-2',
-      captain: 'Rahul Sharma',
-      phone: '+91 98200 44556',
-      court: 'Arena B - Football',
-      timeSlot: '07:00 PM – 08:00 PM',
-      paidOnline: 245,
-      balanceDue: 1800,
-      pin: '7392',
-      balanceStatus: 'unpaid',
-    },
-  ]);
-
   const handleCollectBalance = async (booking: ArrivalBooking, method: 'cash' | 'venue_upi') => {
     try {
       const res = await fetch('/api/bookings/collect-balance', {
@@ -89,7 +67,7 @@ export default function OwnerDashboardPage() {
         body: JSON.stringify({
           bookingId: booking.id,
           method,
-          attendantId: 'attendant-rohan-mehta',
+          attendantId: currentUser ? `owner-${currentUser.id}` : 'owner-attendant',
         }),
       });
 
@@ -103,7 +81,8 @@ export default function OwnerDashboardPage() {
           )
         );
         setNotification(
-          `✅ Collected ₹${booking.balanceDue.toLocaleString('en-IN')} via ${method === 'cash' ? 'Cash' : 'Venue UPI'
+          `✅ Collected ₹${booking.balanceDue.toLocaleString('en-IN')} via ${
+            method === 'cash' ? 'Cash' : 'Venue UPI'
           } for ${booking.captain} (PIN: ${booking.pin}). Court access activated!`
         );
       } else {
@@ -318,73 +297,81 @@ export default function OwnerDashboardPage() {
               <div className="col-span-2 text-right">Collect & Check In</div>
             </div>
 
-            <div className="divide-y-2 divide-[#03594d]/10">
-              {arrivals.map((b) => (
-                <div key={b.id} className="grid grid-cols-12 px-4 py-4 items-center">
-                  <div className="col-span-3">
-                    <p className="font-black text-[#03594d] text-sm">{b.captain}</p>
-                    <p className="text-[11px] text-[#03594d]/70 font-semibold">{b.phone}</p>
-                    <span className="inline-block mt-1 text-[10px] font-mono font-black px-2 py-0.5 rounded bg-[#ffff94] text-[#03594d] border border-[#03594d]">
-                      PIN: {b.pin}
-                    </span>
-                  </div>
-
-                  <div className="col-span-3">
-                    <p className="text-[#03594d] font-black">{b.court}</p>
-                    <p className="text-[11px] text-[#03594d]/70 font-semibold">{b.timeSlot}</p>
-                  </div>
-
-                  <div className="col-span-2">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#82eda6] text-[#03594d] border border-[#03594d]">
-                      ₹{b.paidOnline} (Paid Online)
-                    </span>
-                  </div>
-
-                  <div className="col-span-2">
-                    {b.balanceStatus === 'unpaid' ? (
-                      <div>
-                        <span className="text-[#03594d] font-black text-sm">₹{b.balanceDue.toLocaleString('en-IN')}</span>
-                        <p className="text-[10px] text-[#03594d]/70 font-bold">Due at Gate</p>
-                      </div>
-                    ) : (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#ffff94] text-[#03594d] border border-[#03594d]">
-                        ✓ {b.balanceStatus === 'collected_cash' ? 'Paid in Cash' : 'Paid via Venue UPI'}
+            {arrivals.length > 0 ? (
+              <div className="divide-y-2 divide-[#03594d]/10">
+                {arrivals.map((b) => (
+                  <div key={b.id} className="grid grid-cols-12 px-4 py-4 items-center">
+                    <div className="col-span-3">
+                      <p className="font-black text-[#03594d] text-sm">{b.captain}</p>
+                      <p className="text-[11px] text-[#03594d]/70 font-semibold">{b.phone}</p>
+                      <span className="inline-block mt-1 text-[10px] font-mono font-black px-2 py-0.5 rounded bg-[#ffff94] text-[#03594d] border border-[#03594d]">
+                        PIN: {b.pin}
                       </span>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="col-span-2 text-right">
-                    {b.balanceStatus === 'unpaid' ? (
-                      <div className="flex flex-col sm:flex-row gap-1.5 justify-end">
-                        <button
-                          onClick={() => handleCollectBalance(b, 'cash')}
-                          className="px-3 py-1.5 rounded-xl bg-[#03594d] hover:bg-[#02463c] text-[#82eda6] text-[11px] font-black uppercase border border-[#03594d] shadow-maggie-sm cursor-pointer"
-                        >
-                          💵 Cash
-                        </button>
-                        <button
-                          onClick={() => handleCollectBalance(b, 'venue_upi')}
-                          className="px-3 py-1.5 rounded-xl bg-[#ffff94] hover:bg-[#f5f583] text-[#03594d] text-[11px] font-black uppercase border border-[#03594d] shadow-maggie-sm cursor-pointer"
-                        >
-                          📱 UPI
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-[#03594d] font-black bg-[#82eda6] px-2 py-0.5 rounded border border-[#03594d]">
-                        Squad Checked In
+                    <div className="col-span-3">
+                      <p className="text-[#03594d] font-black">{b.court}</p>
+                      <p className="text-[11px] text-[#03594d]/70 font-semibold">{b.timeSlot}</p>
+                    </div>
+
+                    <div className="col-span-2">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#82eda6] text-[#03594d] border border-[#03594d]">
+                        ₹{b.paidOnline} (Paid Online)
                       </span>
-                    )}
+                    </div>
+
+                    <div className="col-span-2">
+                      {b.balanceStatus === 'unpaid' ? (
+                        <div>
+                          <span className="text-[#03594d] font-black text-sm">₹{b.balanceDue.toLocaleString('en-IN')}</span>
+                          <p className="text-[10px] text-[#03594d]/70 font-bold">Due at Gate</p>
+                        </div>
+                      ) : (
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#ffff94] text-[#03594d] border border-[#03594d]">
+                          ✓ {b.balanceStatus === 'collected_cash' ? 'Paid in Cash' : 'Paid via Venue UPI'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="col-span-2 text-right">
+                      {b.balanceStatus === 'unpaid' ? (
+                        <div className="flex flex-col sm:flex-row gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleCollectBalance(b, 'cash')}
+                            className="px-3 py-1.5 rounded-xl bg-[#03594d] hover:bg-[#02463c] text-[#82eda6] text-[11px] font-black uppercase border border-[#03594d] shadow-maggie-sm cursor-pointer"
+                          >
+                            💵 Cash
+                          </button>
+                          <button
+                            onClick={() => handleCollectBalance(b, 'venue_upi')}
+                            className="px-3 py-1.5 rounded-xl bg-[#ffff94] hover:bg-[#f5f583] text-[#03594d] text-[11px] font-black uppercase border border-[#03594d] shadow-maggie-sm cursor-pointer"
+                          >
+                            📱 UPI
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-[#03594d] font-black bg-[#82eda6] px-2 py-0.5 rounded border border-[#03594d]">
+                          Squad Checked In
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-xs font-semibold text-[#03594d]/75">
+                <span className="text-3xl block mb-2">📋</span>
+                <p className="font-black uppercase text-[#03594d] mb-1">No Matchday Check-Ins Scheduled For Today</p>
+                <p>When squads reserve slots on your grounds, their arrival details and gate check-in PIN will appear here in real time.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
-        GoTurf Owner Control Suite &bull; Payouts Processed Weekly Every Monday
+        GoTurf Owner Control Suite &bull; Venue Operations &amp; Gate Check-In Console
       </footer>
     </main>
   );

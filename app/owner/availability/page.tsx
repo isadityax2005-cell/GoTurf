@@ -22,8 +22,7 @@ interface CourtOption {
 export default function AvailabilityManagementPage() {
   const [selectedCourtId, setSelectedCourtId] = useState('court-1');
   const [selectedDateStr, setSelectedDateStr] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   });
   const [statusNote, setStatusNote] = useState<string | null>(null);
 

@@ -70,6 +70,38 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verify that court belongs to an approved, active venue
+    const { getDemoTurfByCourtId } = await import('@/lib/data/turfs');
+    const demoTurf = getDemoTurfByCourtId(String(courtId));
+    if (demoTurf && demoTurf.status !== 'approved') {
+      return NextResponse.json(
+        { success: false, error: 'This venue is currently unpublished / archived and not taking reservations.', code: 'VENUE_UNPUBLISHED' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      const { getServiceRoleClient } = await import('@/lib/supabase');
+      const supabase = getServiceRoleClient();
+      const { data: courtRow } = await supabase
+        .from('courts')
+        .select('id, is_active, turf_id, turfs(status)')
+        .eq('id', String(courtId))
+        .maybeSingle();
+
+      if (courtRow) {
+        const turfRel = courtRow.turfs as unknown as { status: string } | null;
+        if (!courtRow.is_active || (turfRel?.status && turfRel.status !== 'approved')) {
+          return NextResponse.json(
+            { success: false, error: 'This venue or court is currently unpublished or inactive.', code: 'VENUE_UNPUBLISHED' },
+            { status: 400 }
+          );
+        }
+      }
+    } catch {
+      // Allow through for in-memory unit tests
+    }
+
     const identity = await getRequestIdentity();
     const sanitizedClientPlayerId =
       typeof playerId === 'string' &&

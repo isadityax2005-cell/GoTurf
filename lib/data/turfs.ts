@@ -20,7 +20,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['Floodlights', 'Free Parking', 'Changing Rooms', 'Drinking Water', 'Bibs & Match Balls'],
     rules: 'Flat turf shoes or studs recommended. No metal spikes. Reach 10 minutes prior.',
     cancellation_rule: 'Full refund if cancelled up to 24 hours before the match. No refund after 24h window.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -121,7 +121,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['Floodlights', 'Cushioned Acrylic Flooring', 'Paddles on Rent', 'Locker Room', 'Sports Cafe'],
     rules: 'Non-marking court shoes compulsory. Paddle rental available at counter.',
     cancellation_rule: 'Full refund up to 12 hours prior to slot. 50% refund between 4 to 12 hours.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -190,7 +190,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['All-Weather Covered Shed', 'High-Beam LED Floodlights', 'Spectator Seating', 'Refreshments'],
     rules: 'Only rubber studs allowed. Smoking and alcohol strictly prohibited on premises.',
     cancellation_rule: 'Full refund up to 24 hours before game.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -422,12 +422,13 @@ export function getDemoTurfs(): Turf[] {
 }
 
 export async function fetchLiveApprovedTurfs(mode?: 'live' | 'demo'): Promise<Turf[]> {
-  // When running in isolated demo mode or explicit demo request, return the curated demo venues
-  if (
-    mode === 'demo' ||
-    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
-    process.env.GOTURF_DEMO_ONLY === 'true'
-  ) {
+  // When explicitly requesting demo mode, return only approved demo preview venues
+  if (mode === 'demo') {
+    return DEMO_TURFS.filter((t) => t.status === 'approved');
+  }
+
+  // When forced into offline demo-only harness without database
+  if (mode !== 'live' && process.env.GOTURF_DEMO_ONLY === 'true') {
     return DEMO_TURFS.filter((t) => t.status === 'approved');
   }
 

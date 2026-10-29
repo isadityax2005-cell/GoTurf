@@ -18,7 +18,7 @@ export async function generateStaticParams() {
       slug: turf.slug,
     }));
   } catch {
-    return DEMO_TURFS.map((turf) => ({
+    return DEMO_TURFS.filter((t) => t.status === 'approved').map((turf) => ({
       slug: turf.slug,
     }));
   }

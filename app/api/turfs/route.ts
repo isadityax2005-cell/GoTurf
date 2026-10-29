@@ -9,8 +9,8 @@ export async function GET(request?: Request) {
 
   if (
     requestedMode === 'demo' ||
-    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
-    process.env.GOTURF_DEMO_ONLY === 'true'
+    (requestedMode !== 'live' &&
+      (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.GOTURF_DEMO_ONLY === 'true'))
   ) {
     const demoTurfs = DEMO_TURFS.filter((t) => t.status === 'approved');
     return NextResponse.json({

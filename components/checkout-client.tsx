@@ -746,13 +746,15 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       <span className="flex items-center gap-1.5">
                         <span>Platform Convenience Fee</span>
                         <span className="text-[10px] text-[#03594d] bg-[#ffff94] px-2 py-0.5 rounded border border-[#03594d]">
-                          Verified Protection
+                          {turf.is_demo ? 'Demo Fee' : 'Platform Fee'}
                         </span>
                       </span>
                       <span>₹{platformFee}</span>
                     </div>
                     <p className="text-[11px] text-[#03594d]/75 font-semibold leading-relaxed">
-                      Covers live database locking, instant UPI payment handling, and 100% automated refund protection.
+                      {turf.is_demo
+                        ? 'Illustrative fee breakdown for simulated preview. No real bank charge, UPI transfer, or automated refund is executed in demo mode.'
+                        : 'Covers server-verified reservation routing and slot confirmation.'}
                     </p>
                   </div>
 
@@ -767,7 +769,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     {paymentMode === 'token_advance' && venueBalance > 0 && (
                       <div className="flex justify-between items-center text-xs text-[#03594d] font-bold p-3 rounded-xl bg-[#ffff94]/70 border-2 border-[#03594d]">
                         <span>Remaining Balance Due at Venue:</span>
-                        <span>₹{venueBalance.toLocaleString('en-IN')} (Cash/UPI)</span>
+                        <span>₹{venueBalance.toLocaleString('en-IN')} {turf.is_demo ? '(Simulated Due)' : '(Gate Collection)'}</span>
                       </div>
                     )}
                   </div>
@@ -788,7 +790,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                     {isPaying ? (
                       <>
                         <span className="inline-block h-4 w-4 border-2 border-[#82eda6] border-t-transparent rounded-full animate-spin" />
-                        <span>Verifying &amp; Locking Slot...</span>
+                        <span>{turf.is_demo ? 'Simulating Payment &amp; Match Pass...' : 'Processing Payment...'}</span>
                       </>
                     ) : !turf.is_demo ? (
                       <span>Online Payments Unavailable &bull; Gateway Setup in Progress</span>
@@ -796,7 +798,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                       <>
                         <span>
                           {simulatedCheckout || turf.is_demo ? 'Simulate Payment — ' : 'Pay '}₹{onlinePayable.toLocaleString('en-IN')}{' '}
-                          {paymentMode === 'token_advance' ? 'Token Advance' : 'Full Payment'} via UPI
+                          {paymentMode === 'token_advance' ? 'Token Advance' : 'Full Payment'} (Demo Simulation)
                         </span>
                         <span>&rarr;</span>
                       </>

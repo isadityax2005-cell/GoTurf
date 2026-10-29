@@ -8,7 +8,7 @@ interface CheckoutPageProps {
 }
 
 export function generateStaticParams() {
-  return DEMO_TURFS.map((t) => ({ slug: t.slug }));
+  return DEMO_TURFS.filter((t) => t.status === 'approved').map((t) => ({ slug: t.slug }));
 }
 
 async function CheckoutContent({ params }: CheckoutPageProps) {

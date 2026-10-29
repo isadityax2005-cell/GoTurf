@@ -81,10 +81,16 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     crossCourtSuggestions: [],
   });
 
-  // Generate next 7 selectable dates
+  // Generate next 7 selectable dates in Indian Standard Time (IST)
   const availableDates = useMemo(() => {
     const list: { label: string; dateStr: string; subLabel: string }[] = [];
-    const base = new Date();
+    const istParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date()).split('-');
+    const base = new Date(Number(istParts[0]), Number(istParts[1]) - 1, Number(istParts[2]));
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -108,7 +114,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     return list;
   }, []);
 
-  const [selectedDateStr, setSelectedDateStr] = useState(availableDates[0]?.dateStr || '2026-10-15');
+  const [selectedDateStr, setSelectedDateStr] = useState(
+    availableDates[0]?.dateStr ||
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
 
   // Calculate slots dynamically for current court
   const slots = useMemo(() => {

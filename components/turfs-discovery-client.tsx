@@ -117,7 +117,7 @@ export default function TurfsDiscoveryClient({ initialTurfs, initialMode }: Prop
                   : 'text-[#03594d] hover:bg-[#ffff94]'
               }`}
             >
-              🤖 Demo Arenas (5)
+              🤖 Demo Previews
             </button>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function TurfsDiscoveryClient({ initialTurfs, initialMode }: Prop
             <span className="text-2xl shrink-0 mt-0.5 sm:mt-0">🤖</span>
             <div>
               <p className="text-xs font-black uppercase tracking-wider">
-                Demo Experience • 5 Mumbai Fictional Arenas
+                Demo Experience • Mumbai Fictional Arenas (Illustrative Preview)
               </p>
               <p className="text-xs font-semibold text-[#03594d]/80 mt-0.5">
                 Featuring AI-generated photography and illustrative court diagrams. All bookings use an isolated test checkout simulator with zero real payment.
@@ -230,7 +230,7 @@ export default function TurfsDiscoveryClient({ initialTurfs, initialMode }: Prop
               }}
               className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#03594d] text-[#82eda6] text-xs font-black uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] cursor-pointer transition-all hover:-translate-y-0.5"
             >
-              ✨ Explore 5 Mumbai Demo Arenas
+              ✨ Explore Interactive Demo Mode
             </button>
             <Link
               href="/owner/new-turf"

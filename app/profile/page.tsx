@@ -356,13 +356,31 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Top Navbar */}
       <header className="border-b-2 border-[#03594d] px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 bg-[#82eda6]/90 text-[#03594d]">
-        <Link href="/" className="flex items-center gap-2 text-xs font-black text-[#03594d] hover:underline uppercase tracking-wider">
-          <span>&larr;</span>
-          <span>Home</span>
-        </Link>
-        <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
-          Member Profile
-        </span>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="h-9 w-9 rounded-full bg-[#03594d] text-[#82eda6] flex items-center justify-center font-black text-sm shadow-maggie-sm group-hover:rotate-6 transition-transform">
+              GT
+            </div>
+            <span className="font-black text-2xl tracking-tight text-[#03594d] lowercase">goturf</span>
+          </Link>
+          <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
+            Member Profile
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/bookings"
+            className="px-3.5 py-1.5 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] text-xs font-black uppercase shadow-maggie-sm transition-all"
+          >
+            🎟️ Passes
+          </Link>
+          <Link
+            href="/turfs"
+            className="px-3.5 py-1.5 rounded-full bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] text-xs font-black uppercase shadow-maggie hover:bg-[#02463c] transition-all"
+          >
+            Browse &rarr;
+          </Link>
+        </div>
       </header>
 
       {/* Main Container */}
