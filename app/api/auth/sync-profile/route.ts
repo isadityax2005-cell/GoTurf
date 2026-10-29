@@ -1,57 +1,56 @@
 import { NextResponse } from 'next/server';
+import { getRequestIdentity } from '@/lib/auth/authorization';
 import { getServiceRoleClient } from '@/lib/supabase';
-import type { UserRole } from '@/types/database';
 
 export async function POST(request: Request) {
   try {
+    const identity = await getRequestIdentity();
+    if (!identity) {
+      return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, email, name, phone, role } = body;
-
-    if (!userId || !email) {
-      return NextResponse.json({ success: false, error: 'Missing userId or email' }, { status: 400 });
+    const name = typeof body.name === 'string' ? body.name.trim().slice(0, 100) : undefined;
+    const phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 40) : undefined;
+    const email = identity.user.email?.trim().toLowerCase();
+    if (!email) {
+      return NextResponse.json({ success: false, error: 'A verified account email is required.' }, { status: 400 });
     }
 
-    const supabaseAdmin = getServiceRoleClient();
+    const admin = getServiceRoleClient();
+    const { data: existing, error: lookupError } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('id', identity.user.id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
 
-    // Check if profile already exists to preserve established roles (like admin)
-    const { data: existingData } = await (supabaseAdmin.from('profiles') as any)
-      .select('id, role, name, phone')
-      .eq('id', userId)
-      .single();
+    const profileFields = {
+      email,
+      ...(name ? { name } : {}),
+      ...(phone !== undefined ? { phone: phone || null } : {}),
+      updated_at: new Date().toISOString(),
+    };
 
-    const existing = existingData as { id: string; role?: UserRole; name?: string; phone?: string | null } | null;
+    const result = existing
+      ? await admin.from('profiles').update(profileFields).eq('id', identity.user.id).select('id, email, name, phone, role').single()
+      : await admin.from('profiles').insert({
+          id: identity.user.id,
+          ...profileFields,
+          name: name || splitEmailName(email),
+          role: 'player',
+        }).select('id, email, name, phone, role').single();
 
-    const targetRole: UserRole = existing?.role ? (existing.role as UserRole) : (role as UserRole) || 'player';
-    const targetName = name || existing?.name || splitEmailName(email);
-    const targetPhone = phone || existing?.phone || null;
-
-    const { data, error } = await (supabaseAdmin.from('profiles') as any)
-      .upsert({
-        id: userId,
-        email: email.toLowerCase().trim(),
-        name: targetName,
-        phone: targetPhone,
-        role: targetRole,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Failed to sync profile:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (result.error) {
+      return NextResponse.json({ success: false, error: 'Unable to update profile.' }, { status: 500 });
     }
-
-    return NextResponse.json({ success: true, profile: data });
-  } catch (err: any) {
-    console.error('Error in sync-profile:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, profile: result.data });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Unable to update profile.' }, { status: 500 });
   }
 }
 
 function splitEmailName(email: string): string {
   const prefix = email.split('@')[0] || 'Player';
-  return prefix
-    .replace(/[._-]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return prefix.replace(/[._-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }

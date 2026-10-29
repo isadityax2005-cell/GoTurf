@@ -21,18 +21,16 @@ import {
   getAllRefundsForTesting,
   resetPaymentsForTesting,
   PLATFORM_FEE_PAISE,
-  DEFAULT_WEBHOOK_SECRET,
   type RazorpayWebhookPayload,
 } from '../lib/engine/payment-service';
 
 import {
   createTemporaryHold,
   resetBookingsForTesting,
-  getAllBookingsForTesting,
   getBookingById,
 } from '../lib/engine/booking-service';
 
-import type { Booking } from '../types/database';
+const TEST_WEBHOOK_SECRET = 'goturf-unit-test-webhook-secret';
 
 async function runPhase6Tests() {
   console.log('\n======================================================================');
@@ -52,9 +50,11 @@ async function runPhase6Tests() {
   console.log('--- TEST 1: Server-Authoritative Order Creation ---');
 
   const baseSlotPaise = 180000; // ₹1,800
-  const now = new Date('2026-10-15T10:00:00Z');
-  const matchStart = '2026-10-15T12:30:00Z'; // 18:00 IST
-  const matchEnd = '2026-10-15T13:30:00Z';   // 19:00 IST
+  const now = new Date();
+  const matchBase = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  matchBase.setUTCMinutes(30, 0, 0);
+  const matchStart = matchBase.toISOString();
+  const matchEnd = new Date(matchBase.getTime() + 60 * 60 * 1000).toISOString();
 
   const holdResult = await createTemporaryHold({
     courtId,
@@ -103,12 +103,12 @@ async function runPhase6Tests() {
     },
   });
 
-  const validSignature = signWebhookPayload(mockWebhookBody, DEFAULT_WEBHOOK_SECRET);
-  const isValid = verifyRazorpaySignature(mockWebhookBody, validSignature, DEFAULT_WEBHOOK_SECRET);
+  const validSignature = signWebhookPayload(mockWebhookBody, TEST_WEBHOOK_SECRET);
+  const isValid = verifyRazorpaySignature(mockWebhookBody, validSignature, TEST_WEBHOOK_SECRET);
   console.assert(isValid, 'Valid signature failed verification');
   console.log('  ✓ Genuine Razorpay webhook signature verified successfully');
 
-  const isForged = verifyRazorpaySignature(mockWebhookBody, 'forged_fake_signature_abc', DEFAULT_WEBHOOK_SECRET);
+  const isForged = verifyRazorpaySignature(mockWebhookBody, 'forged_fake_signature_abc', TEST_WEBHOOK_SECRET);
   console.assert(!isForged, 'Forged signature was not rejected');
   console.log('  ✓ [PASS] Forged webhook signature strictly rejected with 401 defense');
 
@@ -150,8 +150,8 @@ async function runPhase6Tests() {
   console.log('\n--- TEST 5: Post-Expiry Late Payment Arbitration ---');
 
   // Scenario A: Payment arrives late, but slot is STILL FREE -> Auto-claim
-  const slot2Start = '2026-10-15T14:30:00Z'; // 20:00 IST
-  const slot2End = '2026-10-15T15:30:00Z';
+  const slot2Start = new Date(matchBase.getTime() + 2 * 60 * 60 * 1000).toISOString();
+  const slot2End = new Date(matchBase.getTime() + 3 * 60 * 60 * 1000).toISOString();
 
   const holdA = (await createTemporaryHold({
     courtId,
@@ -159,7 +159,7 @@ async function runPhase6Tests() {
     startAtUTC: slot2Start,
     endAtUTC: slot2End,
     pricePaise: 180000,
-    now: new Date('2026-10-15T10:00:00Z'),
+    now,
   })).booking!;
 
   const orderA = (await createPaymentOrder({ holdId: holdA.id })).order!;
@@ -191,8 +191,8 @@ async function runPhase6Tests() {
   console.log('  ✓ Scenario A [PASS]: Late payment accepted; free slot was claimed and confirmed.');
 
   // Scenario B: Payment arrives late, BUT another player took the slot -> AUTO-REFUND!
-  const slot3Start = '2026-10-15T16:30:00Z'; // 22:00 IST
-  const slot3End = '2026-10-15T17:30:00Z';
+  const slot3Start = new Date(matchBase.getTime() + 4 * 60 * 60 * 1000).toISOString();
+  const slot3End = new Date(matchBase.getTime() + 5 * 60 * 60 * 1000).toISOString();
 
   // Player A holds slot 3
   const holdA3 = (await createTemporaryHold({
@@ -201,7 +201,7 @@ async function runPhase6Tests() {
     startAtUTC: slot3Start,
     endAtUTC: slot3End,
     pricePaise: 180000,
-    now: new Date('2026-10-15T10:00:00Z'),
+    now,
   })).booking!;
 
   const orderA3 = (await createPaymentOrder({ holdId: holdA3.id })).order!;
@@ -216,7 +216,7 @@ async function runPhase6Tests() {
     startAtUTC: slot3Start,
     endAtUTC: slot3End,
     pricePaise: 180000,
-    now: new Date('2026-10-15T10:11:00Z'),
+    now: new Date(now.getTime() + 11 * 60 * 1000),
   })).booking!;
   holdB3.status = 'confirmed'; // Player B paid first!
 

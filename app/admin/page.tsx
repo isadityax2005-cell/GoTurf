@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface TurfItem {
   id: string;
@@ -30,6 +31,31 @@ interface OwnerItem {
   created_at: string;
 }
 
+interface AdminBookingItem {
+  id: string;
+  turfName: string;
+  courtName: string;
+  playerName: string;
+  playerEmail: string;
+  playerPhone: string;
+  status: string;
+  pricePaise: number;
+  advanceAmountPaise?: number;
+  balanceAmountPaise?: number;
+  checkInOtp?: string;
+  createdAt: string;
+}
+
+interface AdminAuditItem {
+  id: string;
+  actor_id?: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
@@ -39,10 +65,13 @@ export default function AdminDashboardPage() {
     approvedCount: 0,
     totalOwners: 0,
     totalUsers: 0,
+    totalBookings: 0,
   });
   const [pendingTurfs, setPendingTurfs] = useState<TurfItem[]>([]);
   const [approvedTurfs, setApprovedTurfs] = useState<TurfItem[]>([]);
   const [owners, setOwners] = useState<OwnerItem[]>([]);
+  const [bookings, setBookings] = useState<AdminBookingItem[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditItem[]>([]);
   const [activeTab, setActiveTab] = useState<'queue' | 'owners' | 'live' | 'disputes'>('queue');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -56,6 +85,8 @@ export default function AdminDashboardPage() {
         setPendingTurfs(data.pendingTurfs || []);
         setApprovedTurfs(data.approvedTurfs || []);
         setOwners(data.owners || []);
+        setBookings(data.bookings || []);
+        setAuditLogs(data.auditLogs || []);
       } else {
         setNotification(`⚠️ Failed to load admin metrics: ${data.error}`);
       }
@@ -67,7 +98,36 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    fetchOverview();
+    let isCancelled = false;
+    async function initOverview() {
+      try {
+        const res = await fetch('/api/admin/overview');
+        const data = await res.json();
+        if (isCancelled) return;
+        if (data.success) {
+          setStats(data.stats);
+          setPendingTurfs(data.pendingTurfs || []);
+          setApprovedTurfs(data.approvedTurfs || []);
+          setOwners(data.owners || []);
+          setBookings(data.bookings || []);
+          setAuditLogs(data.auditLogs || []);
+        } else {
+          setNotification(`⚠️ Failed to load admin metrics: ${data.error}`);
+        }
+      } catch {
+        if (!isCancelled) {
+          setNotification('Network error loading admin data.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    initOverview();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   const handleVerify = async (turfId: string, action: 'approve' | 'reject') => {
@@ -204,41 +264,37 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap gap-2 mb-6">
           <button
             onClick={() => setActiveTab('queue')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-              activeTab === 'queue'
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${activeTab === 'queue'
                 ? 'bg-[#03594d] text-[#82eda6] shadow-maggie'
                 : 'bg-white text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm'
-            }`}
+              }`}
           >
             📋 Verification Queue ({pendingTurfs.length})
           </button>
           <button
             onClick={() => setActiveTab('owners')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-              activeTab === 'owners'
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${activeTab === 'owners'
                 ? 'bg-[#03594d] text-[#82eda6] shadow-maggie'
                 : 'bg-white text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm'
-            }`}
+              }`}
           >
             👥 Turf Owners Directory ({owners.length})
           </button>
           <button
             onClick={() => setActiveTab('live')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-              activeTab === 'live'
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${activeTab === 'live'
                 ? 'bg-[#03594d] text-[#82eda6] shadow-maggie'
                 : 'bg-white text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm'
-            }`}
+              }`}
           >
             🏟️ Live Turfs ({approvedTurfs.length})
           </button>
           <button
             onClick={() => setActiveTab('disputes')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-              activeTab === 'disputes'
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${activeTab === 'disputes'
                 ? 'bg-[#03594d] text-[#82eda6] shadow-maggie'
                 : 'bg-white text-[#03594d] hover:bg-[#ffff94] shadow-maggie-sm'
-            }`}
+              }`}
           >
             💸 Financial Disputes & Refunds
           </button>
@@ -314,12 +370,15 @@ export default function AdminDashboardPage() {
                               href={photoUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="block aspect-video rounded-xl overflow-hidden border-2 border-[#03594d] bg-gray-100 hover:scale-105 transition-transform"
+                              className="relative block aspect-video rounded-xl overflow-hidden border-2 border-[#03594d] bg-gray-100 hover:scale-105 transition-transform"
                             >
-                              <img
+                              <Image
                                 src={photoUrl}
                                 alt={`Venue proof ${idx + 1}`}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="200px"
+                                unoptimized
+                                className="object-cover"
                               />
                             </a>
                           ))}
@@ -463,82 +522,151 @@ export default function AdminDashboardPage() {
 
         {/* TAB 4: Financial Disputes & Booking Refunds */}
         {activeTab === 'disputes' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-black uppercase text-[#03594d]">Financial Disputes & Refunds</h2>
-                <p className="text-xs font-bold text-[#03594d]/80">
-                  Execute admin overrides and trigger simulated gateway payment refunds.
-                </p>
-              </div>
-              <span className="text-xs text-[#03594d] bg-[#ffff94] border-2 border-[#03594d] shadow-maggie-sm px-3 py-1 rounded-full font-black">
-                Gateway Connected
-              </span>
-            </div>
-
-            <div className="rounded-3xl bg-white border-2 border-[#03594d] shadow-maggie overflow-hidden text-xs">
-              <div className="grid grid-cols-12 bg-[#f9f8f4] px-4 py-3 font-black text-[#03594d] border-b-2 border-[#03594d]">
-                <div className="col-span-3">Booking ID / Player</div>
-                <div className="col-span-3">Venue & Court</div>
-                <div className="col-span-2">Amount Paid</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-2 text-right">Admin Action</div>
-              </div>
-
-              <div className="divide-y-2 border-[#03594d]/10">
-                <div className="grid grid-cols-12 px-4 py-3.5 items-center font-bold">
-                  <div className="col-span-3">
-                    <p className="font-black text-[#03594d]">#BKG-9921-MUM</p>
-                    <p className="text-[11px] text-[#03594d]/70">Karan Verma &bull; +91 98200 11223</p>
-                  </div>
-                  <div className="col-span-3">
-                    <p className="text-[#03594d] font-bold">Bandra Turf Arena</p>
-                    <p className="text-[11px] text-[#03594d]/70">Box Cricket (Court 1)</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-[#03594d] font-black text-sm">₹1,845</p>
-                    <p className="text-[10px] text-[#03594d]/70">₹1,800 + ₹45 fee</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-[#82eda6] text-[#03594d] border-2 border-[#03594d]">
-                      Confirmed
-                    </span>
-                  </div>
-                  <div className="col-span-2 text-right">
-                    <button
-                      onClick={async () => {
-                        const res = await fetch('/api/payments/refund', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            bookingId: 'booking-preseeded-1',
-                            reason: 'Admin dispute override: Court maintenance conflict',
-                            adminOverride: true,
-                          }),
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                          setNotification('💸 100% Refund (₹1,845) initiated to player UPI source via Razorpay.');
-                        } else {
-                          setNotification(`⚠️ Refund notice: ${data.message || data.error}`);
-                        }
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-[#fccddc] hover:bg-white text-[#03594d] border-2 border-[#03594d] text-xs font-black shadow-maggie-sm transition-all cursor-pointer"
-                    >
-                      Cancel & Refund
-                    </button>
-                  </div>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black uppercase text-[#03594d]">Booking Oversight & Financial Disputes</h2>
+                  <p className="text-xs font-bold text-[#03594d]/80">
+                    Review verified customer reservations, match PINs, and execute administrative refund overrides.
+                  </p>
                 </div>
+                <span className="text-xs text-[#03594d] bg-[#ffff94] border-2 border-[#03594d] shadow-maggie-sm px-3 py-1 rounded-full font-black">
+                  {bookings.length} Database Reservations
+                </span>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Footer */}
-      <footer className="border-t-2 border-[#03594d] bg-[#f9f8f4] px-6 py-4 text-center text-xs font-bold text-[#03594d]/80">
-        GoTurf Admin Control Suite &bull; Supabase Operations Synchronized
-      </footer>
-    </main>
-  );
+                  {bookings.length > 0 ? (
+                    <div className="rounded-3xl bg-white border-2 border-[#03594d] shadow-maggie overflow-hidden text-xs">
+                      <div className="grid grid-cols-12 bg-[#f9f8f4] px-4 py-3 font-black text-[#03594d] border-b-2 border-[#03594d]">
+                        <div className="col-span-3">Booking ID / Player</div>
+                        <div className="col-span-3">Venue & Court</div>
+                        <div className="col-span-2">Amount Paid</div>
+                        <div className="col-span-2">Status & PIN</div>
+                        <div className="col-span-2 text-right">Admin Action</div>
+                      </div>
+
+                      <div className="divide-y-2 border-[#03594d]/10">
+                        {bookings.map((b) => {
+                          const priceFormatted = `₹${(b.pricePaise / 100).toLocaleString('en-IN')}`;
+                          const advanceFormatted = b.advanceAmountPaise ? `₹${(b.advanceAmountPaise / 100).toLocaleString('en-IN')}` : null;
+                          const isRefundable = b.status === 'confirmed' || b.status === 'held';
+
+                          return (
+                            <div key={b.id} className="grid grid-cols-12 px-4 py-3.5 items-center font-bold text-[#03594d]">
+                              <div className="col-span-3">
+                                <p className="font-black text-[#03594d]">#{b.id.slice(0, 12)}</p>
+                                <p className="text-[11px] text-[#03594d]/70">{b.playerName} &bull; {b.playerPhone || b.playerEmail || 'Guest'}</p>
+                              </div>
+                              <div className="col-span-3">
+                                <p className="text-[#03594d] font-bold">{b.turfName}</p>
+                                <p className="text-[11px] text-[#03594d]/70">{b.courtName}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <p className="text-[#03594d] font-black text-sm">{advanceFormatted || priceFormatted}</p>
+                                <p className="text-[10px] text-[#03594d]/70">{advanceFormatted ? `Advance (Total ${priceFormatted})` : 'Full Pre-Paid'}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <div className="flex flex-col items-start gap-1">
+                                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border ${b.status === 'confirmed'
+                                      ? 'bg-[#82eda6] text-[#03594d] border-[#03594d]'
+                                      : b.status === 'cancelled'
+                                        ? 'bg-rose-100 text-rose-800 border-rose-400'
+                                        : 'bg-[#ffff94] text-[#03594d] border-[#03594d]'
+                                    }`}>
+                                    {b.status}
+                                  </span>
+                                  {b.checkInOtp && (
+                                    <span className="text-[10px] font-mono font-bold text-[#03594d]/70">
+                                      PIN: {b.checkInOtp}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="col-span-2 text-right">
+                                {isRefundable ? (
+                                  <button
+                                    disabled={actionLoadingId === b.id}
+                                    onClick={async () => {
+                                      setActionLoadingId(b.id);
+                                      try {
+                                        const res = await fetch('/api/payments/refund', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            bookingId: b.id,
+                                            reason: 'Admin dispute override: Court maintenance conflict',
+                                            adminOverride: true,
+                                          }),
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          setNotification(`💸 Refund processed for booking #${b.id.slice(0, 8)}.`);
+                                          await fetchOverview();
+                                        } else {
+                                          setNotification(`⚠️ Refund notice: ${data.message || data.error}`);
+                                        }
+                                      } catch {
+                                        setNotification('Network error processing refund.');
+                                      } finally {
+                                        setActionLoadingId(null);
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl bg-[#fccddc] hover:bg-white text-[#03594d] border-2 border-[#03594d] text-xs font-black shadow-maggie-sm transition-all cursor-pointer disabled:opacity-50"
+                                  >
+                                    {actionLoadingId === b.id ? 'Refunding...' : 'Cancel & Refund'}
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-[#03594d]/60 font-semibold">No action</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 rounded-3xl bg-white border-2 border-[#03594d] text-center shadow-maggie">
+                      <span className="text-3xl block mb-2">📋</span>
+                      <h3 className="font-black text-sm uppercase mb-1">No Active Customer Disputes</h3>
+                      <p className="text-xs font-semibold text-[#03594d]/75">
+                        All customer bookings and payment dispute records will be tracked and audited here.
+                      </p>
+                    </div>
+                  )}
+
+                      {/* Audit Logs Trail */}
+                      {auditLogs.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="text-sm font-black uppercase text-[#03594d] mb-3">
+                            System Audit Records ({auditLogs.length})
+                          </h3>
+                          <div className="rounded-2xl bg-white border-2 border-[#03594d] p-4 shadow-maggie-sm space-y-2 text-xs">
+                            {auditLogs.map((log) => (
+                              <div key={log.id} className="flex items-center justify-between py-1.5 border-b border-[#03594d]/10 last:border-b-0 font-bold">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-[10px] bg-[#f9f8f4] px-2 py-0.5 rounded border border-[#03594d]">
+                                    {log.action}
+                                  </span>
+                                  <span className="text-[#03594d]">
+                                    {log.target_type}: {log.target_id?.slice(0, 10)}...
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-[#03594d]/60 font-mono">
+                                  {new Date(log.created_at).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+            )}
+                  </div>
+        )}
+                </div>
+
+                {/* Footer */}
+                <footer className="border-t-2 border-[#03594d] bg-[#f9f8f4] px-6 py-4 text-center text-xs font-bold text-[#03594d]/80">
+                  GoTurf Admin Control Suite &bull; Supabase Operations Synchronized
+                </footer>
+              </main>
+              );
 }

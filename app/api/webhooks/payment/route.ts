@@ -3,6 +3,7 @@ import {
   verifyRazorpaySignature,
   processPaymentWebhook,
   getWebhookSecret,
+  isTestPaymentSimulatorEnabled,
   type RazorpayWebhookPayload,
 } from '@/lib/engine/payment-service';
 
@@ -10,16 +11,30 @@ export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
     const signature = request.headers.get('x-razorpay-signature') || '';
+    const webhookSecret = getWebhookSecret();
+    const simulatorEnabled = isTestPaymentSimulatorEnabled();
+    const isSimulatorRequest = request.headers.get('x-goturf-test-simulator') === 'true';
 
-    // Verify cryptographic HMAC-SHA256 signature
-    const isValid = verifyRazorpaySignature(rawBody, signature, getWebhookSecret());
-
-    // In local development/test simulation, allow signed simulator events with test header
-    const isTestSimulator = request.headers.get('x-goturf-test-simulator') === 'true';
-
-    if (!isValid && !isTestSimulator) {
+    if (!webhookSecret && !simulatorEnabled) {
       return NextResponse.json(
-        { success: false, error: 'Invalid HMAC webhook signature' },
+        { success: false, error: 'Webhook verification is not configured.' },
+        { status: 503 }
+      );
+    }
+
+    const isValid = webhookSecret
+      ? verifyRazorpaySignature(rawBody, signature, webhookSecret)
+      : false;
+
+    // The unsigned simulator is restricted to explicitly enabled non-production development/demo environments.
+    if (!isValid && !(simulatorEnabled && isSimulatorRequest)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: isSimulatorRequest
+            ? 'Test payment simulator is disabled in this environment'
+            : 'Invalid HMAC webhook signature',
+        },
         { status: 401 }
       );
     }
@@ -49,6 +64,9 @@ export async function POST(request: Request) {
       duplicate: result.duplicate || false,
       outcome: result.outcome,
       message: result.message,
+      bookingId: result.bookingId,
+      bookingToken: result.bookingToken,
+      booking: result.booking,
     });
   } catch {
     return NextResponse.json(

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getRequestIdentity } from '@/lib/auth/authorization';
 import { executeBookingRefund } from '@/lib/engine/payment-service';
 
 export async function POST(request: Request) {
   try {
+    const identity = await getRequestIdentity();
+    if (!identity) return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
+    if (identity.role !== 'admin') return NextResponse.json({ success: false, error: 'Admin access required.' }, { status: 403 });
+
     const body = await request.json();
     const { bookingId, reason, adminOverride } = body;
 
@@ -16,7 +21,7 @@ export async function POST(request: Request) {
     const result = executeBookingRefund({
       bookingId,
       reason: reason || 'Player requested cancellation',
-      adminOverride: Boolean(adminOverride),
+      adminOverride: identity.role === 'admin' && adminOverride === true,
     });
 
     if (!result.success) {

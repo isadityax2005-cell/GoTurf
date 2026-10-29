@@ -11,43 +11,49 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error && data.user) {
       const user = data.user;
       const meta = user.user_metadata || {};
-      const supabaseAdmin = getServiceRoleClient();
-
-      // Ensure profile exists in public.profiles
-      const { data: existingData } = await (supabaseAdmin.from('profiles') as any)
+      const profileResult = await supabase
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+      const existing = profileResult.data as unknown as { role: UserRole } | null;
 
-      const existing = existingData as { role?: UserRole } | null;
-      const userRole: UserRole = existing?.role ? (existing.role as UserRole) : (meta.role as UserRole) || 'player';
-
-      await (supabaseAdmin.from('profiles') as any)
-        .upsert({
+      // Roles come only from the profile table. Metadata is user-editable.
+      let userRole: UserRole = profileResult.error ? 'player' : (existing?.role ?? 'player');
+      if (!existing) {
+        const admin = getServiceRoleClient();
+        await admin.from('profiles').upsert({
           id: user.id,
           email: user.email?.toLowerCase().trim() || '',
           name: meta.full_name || meta.name || user.email?.split('@')[0] || 'Player',
           phone: meta.phone || null,
-          role: userRole,
+          role: 'player',
           updated_at: new Date().toISOString(),
         }, { onConflict: 'id' });
-
-      // Determine smart destination
-      let destination = next;
-      if (!destination || destination === '/') {
-        if (userRole === 'admin') destination = '/admin';
-        else if (userRole === 'owner') destination = '/owner';
-        else destination = '/turfs';
+        userRole = 'player';
       }
 
-      return NextResponse.redirect(`${origin}${destination}`);
+      const safeNext = getSafeLocalPath(next, origin);
+      const destination = safeNext && safeNext !== '/'
+        ? safeNext
+        : (userRole === 'admin' ? '/admin' : userRole === 'owner' ? '/owner' : '/turfs');
+      return NextResponse.redirect(new URL(destination, origin));
     }
   }
 
-  // Return the user to login with error query param
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  return NextResponse.redirect(new URL('/login?error=auth_failed', origin));
+}
+
+function getSafeLocalPath(value: string | null, origin: string): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null;
+  try {
+    const url = new URL(value, origin);
+    return url.origin === origin ? `${url.pathname}${url.search}${url.hash}` : null;
+  } catch {
+    return null;
+  }
 }

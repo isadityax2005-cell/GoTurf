@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { gsap, ScrollTrigger } from '@/lib/gsap';
+import { gsap } from '@/lib/gsap';
 import SpotlightCard from './SpotlightCard';
 import GlassIcon from './GlassIcon';
 

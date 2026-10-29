@@ -3,10 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import GlassIcon from './GlassIcon';
 import SpotlightCard from './SpotlightCard';
 import { DEMO_TURFS } from '@/lib/data/turfs';
-import type { SportType } from '@/types/database';
 
 interface Props {
   selectedSport: string | null;

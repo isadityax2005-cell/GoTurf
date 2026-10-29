@@ -8,21 +8,22 @@ import { createClient } from '@/lib/supabase/client';
 export default function MaggieNavbar() {
   const router = useRouter();
   const [user, setUser] = useState<{ email?: string; name?: string; role?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     async function loadUserProfile() {
       try {
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
           // Fetch authoritative role from public.profiles
-          const { data: profile } = await (supabase.from('profiles') as any)
+          const { data: profile } = await supabase
+            .from('profiles')
             .select('name, role, phone')
             .eq('id', authData.user.id)
-            .maybeSingle();
+            .maybeSingle<{ name?: string; role?: string; phone?: string | null }>();
 
-          const role = profile?.role || authData.user.user_metadata?.role || 'player';
+          const role = profile?.role || 'player';
           const name = profile?.name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User';
 
           setUser({
@@ -35,8 +36,6 @@ export default function MaggieNavbar() {
         }
       } catch (err) {
         console.error('Navbar user load error:', err);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -44,12 +43,13 @@ export default function MaggieNavbar() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const { data: profile } = await (supabase.from('profiles') as any)
+        const { data: profile } = await supabase
+          .from('profiles')
           .select('name, role, phone')
           .eq('id', session.user.id)
-          .maybeSingle();
+          .maybeSingle<{ name?: string; role?: string; phone?: string | null }>();
 
-        const role = profile?.role || session.user.user_metadata?.role || 'player';
+        const role = profile?.role || 'player';
         const name = profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
 
         setUser({
@@ -65,9 +65,10 @@ export default function MaggieNavbar() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const handleSignOut = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
     router.push('/');
@@ -130,9 +131,14 @@ export default function MaggieNavbar() {
                 </Link>
               )}
 
-              <span className="hidden sm:inline-block text-xs font-black text-[#03594d] bg-[#ffff94] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
-                👤 {user.name}
-              </span>
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 text-xs font-black text-[#03594d] bg-[#ffff94] hover:bg-white px-2.5 sm:px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm transition-all"
+                title="View your member profile"
+              >
+                <span>👤</span>
+                <span className="hidden xs:inline sm:inline max-w-[100px] truncate">{user.name}</span>
+              </Link>
 
               <button
                 onClick={handleSignOut}

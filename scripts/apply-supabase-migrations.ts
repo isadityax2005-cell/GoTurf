@@ -3,18 +3,26 @@ import path from 'path';
 import { Client } from 'pg';
 
 async function runMigrations() {
+  // Credentials must come from the environment. Never hardcode database passwords.
+  const dbHost = process.env.SUPABASE_DB_HOST;
+  const dbPassword = process.env.SUPABASE_DB_PASSWORD;
+  if (!dbHost || !dbPassword) {
+    console.error('Refusing to run: set SUPABASE_DB_HOST and SUPABASE_DB_PASSWORD in the environment.');
+    process.exit(1);
+  }
+
   const client = new Client({
-    host: 'db.wedsiefskyzvnbooscuf.supabase.co',
+    host: dbHost,
     port: 5432,
     database: 'postgres',
     user: 'postgres',
-    password: '9mfb6j$$9X%ntpR',
+    password: dbPassword,
     ssl: { rejectUnauthorized: false },
     connectionTimeoutMillis: 10000,
   });
 
   try {
-    console.log('Connecting to Supabase PostgreSQL at db.wedsiefskyzvnbooscuf.supabase.co...');
+    console.log(`Connecting to Supabase PostgreSQL at ${dbHost}...`);
     await client.connect();
     console.log('✓ Connected successfully!');
 
@@ -50,8 +58,9 @@ async function runMigrations() {
 
     await client.end();
     console.log('\n🎉 Supabase schema & seed data migration complete!');
-  } catch (err: any) {
-    console.error('Migration failed:', err.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Migration failed:', message);
     try { await client.end(); } catch {}
     process.exit(1);
   }

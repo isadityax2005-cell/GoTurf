@@ -18,7 +18,7 @@ export async function generateStaticParams() {
       slug: turf.slug,
     }));
   } catch {
-    return DEMO_TURFS.map((turf) => ({
+    return DEMO_TURFS.filter((t) => t.status === 'approved').map((turf) => ({
       slug: turf.slug,
     }));
   }
@@ -68,7 +68,7 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
               <span>All Mumbai Turfs</span>
             </Link>
             <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
-              Verified Venue
+              {turf.is_demo ? 'Fictional Demo Venue' : 'Verified Venue'}
             </span>
           </div>
         </div>
@@ -110,6 +110,7 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
             turfName={turf.name}
             photos={turf.photos}
             primarySport={turf.courts?.[0]?.sport || 'cricket'}
+            isDemo={turf.is_demo}
           />
 
           {/* Courts & Play Areas */}
@@ -135,11 +136,15 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
                     <div>
                       <div className="flex justify-between items-start mb-4">
                         {icon ? (
-                          <div className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#03594d] bg-white shadow-maggie-sm group-hover:scale-105 transition-transform">
+                          <div
+                            className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#03594d] bg-white shadow-maggie-sm group-hover:scale-105 transition-transform"
+                            style={{ position: 'relative' }}
+                          >
                             <Image
                               src={icon.src}
                               alt={icon.name}
                               fill
+                              sizes="48px"
                               className="object-cover"
                             />
                           </div>

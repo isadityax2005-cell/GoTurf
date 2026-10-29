@@ -16,7 +16,6 @@ import {
 import {
   generateCourtSlots,
   calculatePriceForSlot,
-  type SlotGridItem,
 } from '../lib/engine/slot-calculator';
 
 function runPhase4Tests() {

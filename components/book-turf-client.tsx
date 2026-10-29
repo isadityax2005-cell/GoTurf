@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Turf, Court } from '@/types/database';
-import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import { getTurfPhotoUrl, getIllustrativeSportFallback, VENUE_PHOTO_UNAVAILABLE_PATH } from '@/lib/utils/turf-photo';
 import { getActiveBookingsForCourt } from '@/lib/data/bookings';
 import {
   generateCourtSlots,
@@ -52,13 +52,14 @@ interface SuggestionModalState {
 
 export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientProps) {
   const router = useRouter();
-  const courts = turf.courts || [];
+  const courts = useMemo(() => turf.courts || [], [turf.courts]);
   const searchParams = useSearchParams();
   const courtFromUrl = searchParams.get('court');
   const [selectedCourtId, setSelectedCourtId] = useState(courtFromUrl || initialCourtId || courts[0]?.id || '');
   const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
   const [isHolding, setIsHolding] = useState(false);
   const [holdError, setHoldError] = useState<string | null>(null);
+  const [bannerImgFailed, setBannerImgFailed] = useState(false);
 
   // Match Duration Mode: 1h, 2h, 3h, or 'custom' (Multi-Select for 3+ hours)
   const [durationMode, setDurationMode] = useState<DurationMode>(1);
@@ -80,10 +81,16 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     crossCourtSuggestions: [],
   });
 
-  // Generate next 7 selectable dates
+  // Generate next 7 selectable dates in Indian Standard Time (IST)
   const availableDates = useMemo(() => {
     const list: { label: string; dateStr: string; subLabel: string }[] = [];
-    const base = new Date();
+    const istParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date()).split('-');
+    const base = new Date(Number(istParts[0]), Number(istParts[1]) - 1, Number(istParts[2]));
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -107,7 +114,10 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
     return list;
   }, []);
 
-  const [selectedDateStr, setSelectedDateStr] = useState(availableDates[0]?.dateStr || '2026-10-15');
+  const [selectedDateStr, setSelectedDateStr] = useState(
+    availableDates[0]?.dateStr ||
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
 
   // Calculate slots dynamically for current court
   const slots = useMemo(() => {
@@ -406,7 +416,6 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courtId: selectedBooking.courtId,
-          playerId: 'player-demo-current',
           startAtUTC: selectedBooking.startAtUTC,
           endAtUTC: selectedBooking.endAtUTC,
           pricePaise: selectedBooking.pricePaise,
@@ -415,13 +424,16 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) {
+      if (!res.ok || !data.success || !data.booking) {
         setHoldError(data.error || 'Slot was just taken! Please pick another slot.');
         setSelectedBooking(null);
         return;
       }
 
-      router.push(`/turfs/${turf.slug}/checkout?court=${selectedBooking.courtId}&holdId=${data.booking.id}`);
+      const holdToken = data.holdToken || data.booking.id;
+      router.push(
+        `/turfs/${turf.slug}/checkout?court=${encodeURIComponent(selectedBooking.courtId)}&holdId=${encodeURIComponent(holdToken)}`
+      );
     } catch {
       setHoldError('Network error while holding slot. Please try again.');
     } finally {
@@ -468,11 +480,16 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-[#03594d] shadow-maggie-sm shrink-0 bg-[#03594d]/10">
               <Image
-                src={getTurfPhotoUrl(turf.photos?.[0], selectedCourt?.sport || 'cricket')}
+                src={
+                  bannerImgFailed
+                    ? (turf.is_demo ? getIllustrativeSportFallback(selectedCourt?.sport || 'cricket') : VENUE_PHOTO_UNAVAILABLE_PATH)
+                    : getTurfPhotoUrl(turf.photos?.[0], selectedCourt?.sport || 'cricket', turf.is_demo)
+                }
                 alt={turf.name}
                 fill
                 sizes="100px"
                 className="object-cover"
+                onError={() => setBannerImgFailed(true)}
               />
             </div>
 
@@ -482,7 +499,9 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   📍 {turf.region?.locality}, Mumbai
                 </span>
                 <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2 py-0.5 rounded-full border border-[#03594d]">
-                  ★ Verified Venue
+                  {turf.is_demo
+                    ? (turf.slug === 'bandra-turf-arena-demo' ? '🤖 Demo • AI Image' : '🎨 Demo • Illustrative')
+                    : 'Registered Arena'}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#03594d] tracking-tight uppercase">

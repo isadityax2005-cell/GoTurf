@@ -3,7 +3,7 @@
 // Interacts with Supabase with seamless demo fallback for offline/preview mode
 // ============================================================================
 
-import type { Turf, SportType } from '@/types/database';
+import type { Turf, Court, Region, TurfPhoto, SportType } from '@/types/database';
 
 // In-memory demo store representing seed data for instant local demoing
 export const DEMO_TURFS: Turf[] = [
@@ -20,7 +20,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['Floodlights', 'Free Parking', 'Changing Rooms', 'Drinking Water', 'Bibs & Match Balls'],
     rules: 'Flat turf shoes or studs recommended. No metal spikes. Reach 10 minutes prior.',
     cancellation_rule: 'Full refund if cancelled up to 24 hours before the match. No refund after 24h window.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -28,17 +28,49 @@ export const DEMO_TURFS: Turf[] = [
       {
         id: 'p-bandra-1',
         turf_id: '30000000-0000-0000-0000-000000000001',
-        path: 'https://images.unsplash.com/photo-1529900245534-47fbf82a44dd?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Bandra Turf Arena Floodlit Night Session',
+        path: '/images/demo-ai/bandra-1.webp',
+        caption: 'AI-generated illustrative demo image 1/6: Elevated establishing view of both courts, netting roof and floodlights (fictional venue, not a real venue photograph)',
         sort_order: 0,
         created_at: '2026-10-08T00:00:00Z',
       },
       {
         id: 'p-bandra-2',
         turf_id: '30000000-0000-0000-0000-000000000001',
-        path: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Pitch 1 High-Density AstroTurf',
+        path: '/images/demo-ai/bandra-2.webp',
+        caption: 'AI-generated illustrative demo image 2/6: Opposite-corner view back across the box-cricket and 5-a-side courts (fictional venue, not a real venue photograph)',
         sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-bandra-3',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: '/images/demo-ai/bandra-3.webp',
+        caption: 'AI-generated illustrative demo image 3/6: Sideline view along the covered dugout with bench and water coolers (fictional venue, not a real venue photograph)',
+        sort_order: 2,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-bandra-4',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: '/images/demo-ai/bandra-4.webp',
+        caption: 'AI-generated illustrative demo image 4/6: End-line view toward the 5-a-side goal, cricket pitch beyond the divider (fictional venue, not a real venue photograph)',
+        sort_order: 3,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-bandra-5',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: '/images/demo-ai/bandra-5.webp',
+        caption: 'AI-generated illustrative demo image 5/6: Promenade entrance with gate kiosk leading to the floodlit courts (fictional venue, not a real venue photograph)',
+        sort_order: 4,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-bandra-6',
+        turf_id: '30000000-0000-0000-0000-000000000001',
+        path: '/images/demo-ai/bandra-6.webp',
+        caption: 'AI-generated illustrative demo image 6/6: Turf surface close-up at a white line junction near the penalty area (fictional venue, not a real venue photograph)',
+        sort_order: 5,
         created_at: '2026-10-08T00:00:00Z',
       },
     ],
@@ -89,7 +121,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['Floodlights', 'Cushioned Acrylic Flooring', 'Paddles on Rent', 'Locker Room', 'Sports Cafe'],
     rules: 'Non-marking court shoes compulsory. Paddle rental available at counter.',
     cancellation_rule: 'Full refund up to 12 hours prior to slot. 50% refund between 4 to 12 hours.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -97,16 +129,16 @@ export const DEMO_TURFS: Turf[] = [
       {
         id: 'p-powai-1',
         turf_id: '30000000-0000-0000-0000-000000000002',
-        path: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Powai Acrylic Hard Court Arena',
+        path: '/images/demo-fallbacks/powai-pickleball-court.webp',
+        caption: 'Powai Acrylic Pickleball Court Layout (Illustrative Demo Preview)',
         sort_order: 0,
         created_at: '2026-10-08T00:00:00Z',
       },
       {
         id: 'p-powai-2',
         turf_id: '30000000-0000-0000-0000-000000000002',
-        path: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Pickleball & Tennis Pro Courts',
+        path: '/images/demo-fallbacks/powai-tennis-court.webp',
+        caption: 'Regulation Synthetic Hard Court Layout (Illustrative Demo Preview)',
         sort_order: 1,
         created_at: '2026-10-08T00:00:00Z',
       },
@@ -158,7 +190,7 @@ export const DEMO_TURFS: Turf[] = [
     facilities: ['All-Weather Covered Shed', 'High-Beam LED Floodlights', 'Spectator Seating', 'Refreshments'],
     rules: 'Only rubber studs allowed. Smoking and alcohol strictly prohibited on premises.',
     cancellation_rule: 'Full refund up to 24 hours before game.',
-    status: 'approved',
+    status: 'hidden',
     is_demo: true,
     created_at: '2026-10-08T00:00:00Z',
     updated_at: '2026-10-08T00:00:00Z',
@@ -166,16 +198,16 @@ export const DEMO_TURFS: Turf[] = [
       {
         id: 'p-andheri-1',
         turf_id: '30000000-0000-0000-0000-000000000003',
-        path: 'https://images.unsplash.com/photo-1518604666864-742395639543?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Andheri Multi-Sport Covered Facility',
+        path: '/images/demo-fallbacks/andheri-covered-turf.webp',
+        caption: 'Andheri Multi-Sport Hub — Covered Facility (Stock photo, illustrative)',
         sort_order: 0,
         created_at: '2026-10-08T00:00:00Z',
       },
       {
         id: 'p-andheri-2',
         turf_id: '30000000-0000-0000-0000-000000000003',
-        path: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80',
-        caption: 'Night Lights & Viewing Stand',
+        path: '/images/demo-fallbacks/andheri-night-arena.webp',
+        caption: 'Andheri Multi-Sport Hub — Floodlit Arena (Stock photo, illustrative)',
         sort_order: 1,
         created_at: '2026-10-08T00:00:00Z',
       },
@@ -214,10 +246,153 @@ export const DEMO_TURFS: Turf[] = [
       },
     ],
   },
+  {
+    id: '30000000-0000-0000-0000-000000000004',
+    owner_id: '20000000-0000-0000-0000-000000000002',
+    region_id: '10000000-0000-0000-0000-000000000004',
+    name: 'Kurla Cage Arena [Demo]',
+    slug: 'kurla-cage-arena-demo',
+    address: 'Phoenix Marketcity Link Road, Kurla West, Mumbai 400070 (Fictional Demo Venue)',
+    lat: 19.0865,
+    lng: 72.8886,
+    maps_url: 'https://maps.google.com/?q=19.0865,72.8886',
+    facilities: ['Black Mesh Roof Cage', 'LED Floodlights', 'Dugout Seating', 'Drinking Water', 'Changing Rooms'],
+    rules: 'Fictional demo venue for preview only. Turf trainers or non-marking futsal soles mandatory.',
+    cancellation_rule: 'Simulated demo venue — no real bookings or charges.',
+    status: 'approved',
+    is_demo: true,
+    created_at: '2026-10-08T00:00:00Z',
+    updated_at: '2026-10-08T00:00:00Z',
+    photos: [
+      {
+        id: 'p-kurla-1',
+        turf_id: '30000000-0000-0000-0000-000000000004',
+        path: '/images/demo-fallbacks/kurla-cage-futsal.webp',
+        caption: 'Kurla Cage Arena — 6-a-Side Futsal Cage Layout with Black Mesh Roof & Magenta/Black Palette (Illustrative Fallback)',
+        sort_order: 0,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-kurla-2',
+        turf_id: '30000000-0000-0000-0000-000000000004',
+        path: '/images/demo-fallbacks/kurla-cage-sideline.webp',
+        caption: 'Kurla Cage Arena — Overhead Black Mesh Roof & Goal Enclosure View (Illustrative Fallback)',
+        sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+    ],
+    region: {
+      id: '10000000-0000-0000-0000-000000000004',
+      locality: 'Kurla West',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      created_at: '2026-10-08T00:00:00Z',
+    },
+    courts: [
+      {
+        id: '40000000-0000-0000-0000-000000000007',
+        turf_id: '30000000-0000-0000-0000-000000000004',
+        name: 'Cage 1 - 6v6 Futsal',
+        sport: 'football',
+        format: '6-a-side Futsal Cage',
+        surface: 'Anthracite Turf (Magenta Markings)',
+        slot_minutes: 60,
+        is_active: true,
+        created_at: '2026-10-08T00:00:00Z',
+        updated_at: '2026-10-08T00:00:00Z',
+      },
+    ],
+  },
+  {
+    id: '30000000-0000-0000-0000-000000000005',
+    owner_id: '20000000-0000-0000-0000-000000000003',
+    region_id: '10000000-0000-0000-0000-000000000005',
+    name: 'Juhu Sunrise Padel [Demo]',
+    slug: 'juhu-sunrise-padel-demo',
+    address: 'Juhu Tara Road, Near Palm Courtyard, Juhu, Mumbai 400049 (Fictional Demo Venue)',
+    lat: 19.0988,
+    lng: 72.8264,
+    maps_url: 'https://maps.google.com/?q=19.0988,72.8264',
+    facilities: ['Twin Glass-Walled Padel Courts', 'Terracotta Turf Surface', 'Palm Courtyard', 'Racket Rental', 'Shower Suites'],
+    rules: 'Fictional demo venue for preview only. Non-marking padel/tennis court shoes required.',
+    cancellation_rule: 'Simulated demo venue — no real bookings or charges.',
+    status: 'approved',
+    is_demo: true,
+    created_at: '2026-10-08T00:00:00Z',
+    updated_at: '2026-10-08T00:00:00Z',
+    photos: [
+      {
+        id: 'p-juhu-1',
+        turf_id: '30000000-0000-0000-0000-000000000005',
+        path: '/images/demo-fallbacks/juhu-sunrise-padel.webp',
+        caption: 'Juhu Sunrise Padel — Twin Glass-Walled Padel Courts with Palm Trees & Terracotta Surface (Illustrative Fallback)',
+        sort_order: 0,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: 'p-juhu-2',
+        turf_id: '30000000-0000-0000-0000-000000000005',
+        path: '/images/demo-fallbacks/juhu-padel-glass.webp',
+        caption: 'Juhu Sunrise Padel — 12mm Tempered Glass Rebound Walls & Terracotta Turf View (Illustrative Fallback)',
+        sort_order: 1,
+        created_at: '2026-10-08T00:00:00Z',
+      },
+    ],
+    region: {
+      id: '10000000-0000-0000-0000-000000000005',
+      locality: 'Juhu',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      created_at: '2026-10-08T00:00:00Z',
+    },
+    courts: [
+      {
+        id: '40000000-0000-0000-0000-000000000008',
+        turf_id: '30000000-0000-0000-0000-000000000005',
+        name: 'Court 1 - Sunrise Glass Padel',
+        sport: 'tennis',
+        format: 'Glass-Walled Padel (Doubles)',
+        surface: 'Terracotta Monofilament Turf',
+        slot_minutes: 60,
+        is_active: true,
+        created_at: '2026-10-08T00:00:00Z',
+        updated_at: '2026-10-08T00:00:00Z',
+      },
+      {
+        id: '40000000-0000-0000-0000-000000000009',
+        turf_id: '30000000-0000-0000-0000-000000000005',
+        name: 'Court 2 - Championship Padel',
+        sport: 'pickleball',
+        format: 'Glass-Walled Padel / Pickleball',
+        surface: 'Terracotta Monofilament Turf',
+        slot_minutes: 60,
+        is_active: true,
+        created_at: '2026-10-08T00:00:00Z',
+        updated_at: '2026-10-08T00:00:00Z',
+      },
+    ],
+  },
 ];
 
 // In-memory store for pending/newly submitted turfs during demo
-let pendingStore: Turf[] = [];
+const pendingStore: Turf[] = [];
+
+export function getDemoTurfByCourtId(courtId: string): Turf | null {
+  for (const turf of DEMO_TURFS) {
+    if (turf.courts?.some((c) => c.id === courtId)) {
+      return turf;
+    }
+  }
+  return null;
+}
+
+export function getDemoCourtById(courtId: string): Court | null {
+  for (const turf of DEMO_TURFS) {
+    const found = turf.courts?.find((c) => c.id === courtId);
+    if (found) return found;
+  }
+  return null;
+}
 
 export function getApprovedTurfs(filter?: { sport?: SportType | 'all'; locality?: string }): Turf[] {
   let list = DEMO_TURFS.filter((t) => t.status === 'approved');
@@ -236,37 +411,65 @@ export function getApprovedTurfs(filter?: { sport?: SportType | 'all'; locality?
 export function getTurfBySlug(slug: string): Turf | null {
   const found = DEMO_TURFS.find((t) => t.slug === slug);
   if (found && found.status === 'approved') return found;
-  
+
   // Check if it exists in pending store
   const pending = pendingStore.find((t) => t.slug === slug);
   return pending || null;
 }
 
-export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
+export function getDemoTurfs(): Turf[] {
+  return DEMO_TURFS.filter((t) => t.status === 'approved');
+}
+
+export async function fetchLiveApprovedTurfs(mode?: 'live' | 'demo'): Promise<Turf[]> {
+  // When explicitly requesting demo mode, return only approved demo preview venues
+  if (mode === 'demo') {
+    return DEMO_TURFS.filter((t) => t.status === 'approved');
+  }
+
+  // When forced into offline demo-only harness without database
+  if (mode !== 'live' && process.env.GOTURF_DEMO_ONLY === 'true') {
+    return DEMO_TURFS.filter((t) => t.status === 'approved');
+  }
+
   try {
     const { getServiceRoleClient } = await import('@/lib/supabase');
     const supabaseAdmin = getServiceRoleClient();
 
-    const { data: dbTurfs, error: tErr } = await (supabaseAdmin.from('turfs') as any)
+    // Query strictly genuine owner-submitted and approved venues (excluding demo records)
+    const { data: dbTurfsData, error: tErr } = await supabaseAdmin
+      .from('turfs')
       .select('*')
       .eq('status', 'approved')
+      .eq('is_demo', false)
       .order('created_at', { ascending: false });
 
+    const dbTurfs = dbTurfsData as unknown as Turf[] | null;
+
     if (tErr) {
-      console.warn('fetchLiveApprovedTurfs Supabase error, falling back:', tErr);
-      return DEMO_TURFS.filter((t) => t.status === 'approved');
+      console.warn('fetchLiveApprovedTurfs Supabase error:', tErr);
+      return [];
     }
 
-    const [{ data: regions }, { data: courts }, { data: photos }] = await Promise.all([
-      (supabaseAdmin.from('regions') as any).select('*'),
-      (supabaseAdmin.from('courts') as any).select('*'),
-      (supabaseAdmin.from('turf_photos') as any).select('*').order('sort_order', { ascending: true }),
+    if (!dbTurfs || dbTurfs.length === 0) {
+      // Genuine catalogue has zero real owner listings yet
+      return [];
+    }
+
+    const [{ data: regionsData }, { data: courtsData }, { data: photosData }] = await Promise.all([
+      supabaseAdmin.from('regions').select('*'),
+      supabaseAdmin.from('courts').select('*'),
+      supabaseAdmin.from('turf_photos').select('*').order('sort_order', { ascending: true }),
     ]);
 
-    const regionMap = new Map((regions || []).map((r: any) => [r.id, r]));
+    const regions = (regionsData as unknown as Region[] | null) || [];
+    const courts = (courtsData as unknown as Court[] | null) || [];
+    const photos = (photosData as unknown as TurfPhoto[] | null) || [];
 
-    const enrichedDbTurfs: Turf[] = (dbTurfs || []).map((t: any) => {
-      const region = regionMap.get(t.region_id) || {
+    const regionMap = new Map<string, Region>(regions.map((r) => [r.id, r]));
+
+    const enrichedDbTurfs: Turf[] = dbTurfs.map((t) => {
+      const region: Region = regionMap.get(t.region_id) || {
         id: t.region_id,
         locality: 'Mumbai',
         city: 'Mumbai',
@@ -274,8 +477,8 @@ export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
         created_at: t.created_at,
       };
 
-      const turfCourts = (courts || []).filter((c: any) => c.turf_id === t.id);
-      const turfPhotos = (photos || []).filter((p: any) => p.turf_id === t.id);
+      const turfCourts = courts.filter((c) => c.turf_id === t.id);
+      const turfPhotos = photos.filter((p) => p.turf_id === t.id);
 
       return {
         ...t,
@@ -292,75 +495,79 @@ export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
             is_active: true,
             created_at: t.created_at,
             updated_at: t.updated_at,
-          }
+          },
         ],
         photos: turfPhotos,
       };
     });
 
-    if (enrichedDbTurfs.length > 0) {
-      const dbIds = new Set(enrichedDbTurfs.map((t) => t.id));
-      const dbSlugs = new Set(enrichedDbTurfs.map((t) => t.slug));
-      const fallbackDemos = DEMO_TURFS.filter((d) => !dbIds.has(d.id) && !dbSlugs.has(d.slug));
-      return [...enrichedDbTurfs, ...fallbackDemos];
-    }
-
-    return DEMO_TURFS.filter((t) => t.status === 'approved');
+    return enrichedDbTurfs;
   } catch (err) {
     console.error('fetchLiveApprovedTurfs exception:', err);
-    return DEMO_TURFS.filter((t) => t.status === 'approved');
+    return [];
   }
 }
 
 export async function fetchTurfBySlug(slug: string): Promise<Turf | null> {
-  try {
-    const { getServiceRoleClient } = await import('@/lib/supabase');
-    const supabaseAdmin = getServiceRoleClient();
-    const { data: turf } = await (supabaseAdmin.from('turfs') as any)
-      .select('*')
-      .eq('slug', slug)
-      .maybeSingle();
-
-    if (turf && turf.status === 'approved') {
-      const [{ data: region }, { data: courts }, { data: photos }] = await Promise.all([
-        (supabaseAdmin.from('regions') as any).select('*').eq('id', turf.region_id).maybeSingle(),
-        (supabaseAdmin.from('courts') as any).select('*').eq('turf_id', turf.id),
-        (supabaseAdmin.from('turf_photos') as any).select('*').eq('turf_id', turf.id).order('sort_order', { ascending: true }),
-      ]);
-
-      return {
-        ...turf,
-        region: region || {
-          id: turf.region_id,
-          locality: 'Mumbai',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          created_at: turf.created_at,
-        },
-        courts: courts && courts.length > 0 ? courts : [
-          {
-            id: `court-${turf.id}-1`,
-            turf_id: turf.id,
-            name: 'Main Arena',
-            sport: 'cricket',
-            format: 'Box Cricket',
-            surface: 'Artificial Grass',
-            slot_minutes: 60,
-            is_active: true,
-            created_at: turf.created_at,
-            updated_at: turf.updated_at,
-          }
-        ],
-        photos: photos || [],
-      };
-    }
-  } catch (err) {
-    console.warn('fetchTurfBySlug Supabase query warning, falling back to local store:', err);
+  // Fast-path for known demo turfs so demo flows never need to query Supabase
+  const demoFound = DEMO_TURFS.find((t) => t.slug === slug);
+  if (demoFound && demoFound.status === 'approved') {
+    return demoFound;
   }
 
-  // Fallback to local store if not found in Supabase
-  const demoFound = DEMO_TURFS.find((t) => t.slug === slug);
-  if (demoFound && demoFound.status === 'approved') return demoFound;
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.GOTURF_DEMO_ONLY !== 'true') {
+    try {
+      const { getServiceRoleClient } = await import('@/lib/supabase');
+      const supabaseAdmin = getServiceRoleClient();
+      const { data: turfData } = await supabaseAdmin
+        .from('turfs')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+
+      const turf = turfData as unknown as Turf | null;
+
+      if (turf && turf.status === 'approved') {
+        const [{ data: regionData }, { data: courtsData }, { data: photosData }] = await Promise.all([
+          supabaseAdmin.from('regions').select('*').eq('id', turf.region_id).maybeSingle(),
+          supabaseAdmin.from('courts').select('*').eq('turf_id', turf.id),
+          supabaseAdmin.from('turf_photos').select('*').eq('turf_id', turf.id).order('sort_order', { ascending: true }),
+        ]);
+
+        const region = regionData as unknown as Region | null;
+        const courts = (courtsData as unknown as Court[] | null) || [];
+        const photos = (photosData as unknown as TurfPhoto[] | null) || [];
+
+        return {
+          ...turf,
+          region: region || {
+            id: turf.region_id,
+            locality: 'Mumbai',
+            city: 'Mumbai',
+            state: 'Maharashtra',
+            created_at: turf.created_at,
+          },
+          courts: courts.length > 0 ? courts : [
+            {
+              id: `court-${turf.id}-1`,
+              turf_id: turf.id,
+              name: 'Main Arena',
+              sport: 'cricket',
+              format: 'Box Cricket',
+              surface: 'Artificial Grass',
+              slot_minutes: 60,
+              is_active: true,
+              created_at: turf.created_at,
+              updated_at: turf.updated_at,
+            },
+          ],
+          photos,
+        };
+      }
+    } catch (err) {
+      console.warn('fetchTurfBySlug Supabase query warning, falling back to local store:', err);
+    }
+  }
 
   const pending = pendingStore.find((t) => t.slug === slug);
   return pending || null;

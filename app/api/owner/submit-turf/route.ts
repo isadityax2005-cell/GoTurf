@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getRequestIdentity } from '@/lib/auth/authorization';
 import { getServiceRoleClient } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
+    const identity = await getRequestIdentity();
+    if (!identity) return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
+    if (identity.role !== 'owner') return NextResponse.json({ success: false, error: 'Verified owner access required.' }, { status: 403 });
+
     const body = await request.json();
     const {
       name,
@@ -17,7 +22,6 @@ export async function POST(request: Request) {
       courtFormat,
       photos,
       contactNumber,
-      ownerId,
     } = body;
 
     if (!name || !address) {
@@ -28,56 +32,18 @@ export async function POST(request: Request) {
     }
 
     const supabaseAdmin = getServiceRoleClient();
-
-    // 1. Resolve owner ID (from request body, auth session, or owner profile)
-    let finalOwnerId = ownerId;
-    if (!finalOwnerId) {
-      try {
-        const { createClient } = await import('@/lib/supabase/server');
-        const authSupabase = await createClient();
-        const { data: { user } } = await authSupabase.auth.getUser();
-        if (user?.id) {
-          finalOwnerId = user.id;
-        }
-      } catch (authErr) {
-        console.warn('Session owner resolution fallback:', authErr);
-      }
-    }
-
-    if (!finalOwnerId) {
-      const { data: firstOwner } = await (supabaseAdmin.from('profiles') as any)
-        .select('id')
-        .eq('role', 'owner')
-        .limit(1)
-        .single();
-      finalOwnerId = firstOwner?.id || '20000000-0000-0000-0000-000000000002';
-    }
-
-    // Ensure owner profile exists
-    if (finalOwnerId) {
-      const { data: existingProfile } = await (supabaseAdmin.from('profiles') as any)
-        .select('id')
-        .eq('id', finalOwnerId)
-        .maybeSingle();
-
-      if (!existingProfile) {
-        await (supabaseAdmin.from('profiles') as any).upsert({
-          id: finalOwnerId,
-          role: 'owner',
-          name: name ? `${name} Partner` : 'Turf Owner',
-          phone: contactNumber || null,
-        });
-      }
-    }
+    // The authenticated owner ID is authoritative; request-body ownerId is never used.
+    const finalOwnerId = identity.user.id;
 
     // 2. Resolve or find Region ID
-    const { data: regions } = await (supabaseAdmin.from('regions') as any)
+    const { data: regions } = await supabaseAdmin
+      .from('regions')
       .select('id, locality')
       .ilike('locality', `%${locality || 'Bandra'}%`)
       .limit(1);
 
-    const regionId = regions && regions.length > 0 
-      ? regions[0].id 
+    const regionId = regions && regions.length > 0
+      ? regions[0].id
       : '10000000-0000-0000-0000-000000000001';
 
     // 3. Generate clean unique slug
@@ -89,7 +55,8 @@ export async function POST(request: Request) {
     const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
 
     // 4. Insert Turf
-    const { data: turf, error: turfError } = await (supabaseAdmin.from('turfs') as any)
+    const { data: turf, error: turfError } = await supabaseAdmin
+      .from('turfs')
       .insert({
         name,
         slug,
@@ -115,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     // 5. Insert Court
-    const { error: courtError } = await (supabaseAdmin.from('courts') as any).insert({
+    const { error: courtError } = await supabaseAdmin.from('courts').insert({
       turf_id: turf.id,
       name: courtName || 'Main Arena 1',
       sport: courtSport || 'cricket',
@@ -138,24 +105,24 @@ export async function POST(request: Request) {
         sort_order: index,
       }));
 
-      await (supabaseAdmin.from('turf_photos') as any).insert(photoRows);
+      await supabaseAdmin.from('turf_photos').insert(photoRows);
     }
 
-    // 7. Insert Audit Log
+    // 7. Insert Audit Log with schema-conforming columns
     try {
-      await (supabaseAdmin.from('audit_log') as any).insert({
+      await supabaseAdmin.from('audit_log').insert({
         actor_id: finalOwnerId,
         action: 'turf.submitted',
-        entity_type: 'turf',
-        entity_id: turf.id,
-        details: {
-          name,
-          contactNumber,
-          locality,
-          photosCount: photos?.length || 0,
-        },
-      });
-    } catch (e) {
+          target_type: 'turf',
+          target_id: turf.id,
+          metadata: {
+            name,
+            contactNumber,
+            locality,
+            photosCount: photos?.length || 0,
+          },
+        });
+    } catch {
       // Non-fatal
     }
 
@@ -165,8 +132,9 @@ export async function POST(request: Request) {
       turfName: turf.name,
       status: 'pending',
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Submit turf exception:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Failed to submit turf';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

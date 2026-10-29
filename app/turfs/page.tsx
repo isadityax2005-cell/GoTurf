@@ -10,9 +10,10 @@ export const metadata = {
 };
 
 async function TurfsDiscoveryContent() {
-  // Query Supabase directly on server for all approved turfs & courts
-  const turfs = await fetchLiveApprovedTurfs();
-  return <TurfsDiscoveryClient initialTurfs={turfs} />;
+  const isDemo = process.env.GOTURF_DEMO_ONLY === 'true';
+  const initialMode = isDemo ? 'demo' : 'live';
+  const turfs = await fetchLiveApprovedTurfs(initialMode);
+  return <TurfsDiscoveryClient initialTurfs={turfs} initialMode={initialMode} />;
 }
 
 export default function TurfsDiscoveryPage() {

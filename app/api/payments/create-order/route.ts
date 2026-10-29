@@ -8,18 +8,23 @@ export async function POST(request: Request) {
 
     if (!holdId) {
       return NextResponse.json(
-        { success: false, error: 'Missing holdId in request body' },
+        { success: false, error: 'Missing holdId in request body', code: 'MISSING_HOLD_ID' },
         { status: 400 }
       );
     }
 
     const result = await createPaymentOrder({ holdId, playerId, paymentMode });
 
-
     if (!result.success) {
+      const status =
+        result.code === 'HOLD_EXPIRED'
+          ? 410
+          : result.code === 'HOLD_NOT_FOUND'
+            ? 404
+            : 400;
       return NextResponse.json(
         { success: false, error: result.error, code: result.code },
-        { status: result.code === 'HOLD_EXPIRED' ? 410 : 400 }
+        { status }
       );
     }
 

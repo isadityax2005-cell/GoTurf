@@ -3,30 +3,62 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { TurfPhoto } from '@/types/database';
-import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import {
+  getTurfPhotoUrl,
+  getIllustrativeSportFallback,
+  isAiGeneratedPhotoUrl,
+  isIllustrativePhotoUrl,
+  VENUE_PHOTO_UNAVAILABLE_PATH,
+} from '@/lib/utils/turf-photo';
 
 interface TurfGalleryProps {
   turfName: string;
   photos?: TurfPhoto[];
   primarySport?: string;
+  isDemo?: boolean;
 }
 
 export default function TurfGallery({
   turfName,
   photos = [],
   primarySport = 'cricket',
+  isDemo = false,
 }: TurfGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [failedIndices, setFailedIndices] = useState<Record<number, boolean>>({});
 
   // Normalize photos into usable URLs
   const photoList: string[] =
     photos.length > 0
-      ? photos.map((p) => getTurfPhotoUrl(p, primarySport))
-      : [getTurfPhotoUrl(undefined, primarySport)];
+      ? photos.map((p) => getTurfPhotoUrl(p, primarySport, isDemo))
+      : [isDemo ? getIllustrativeSportFallback(primarySport) : VENUE_PHOTO_UNAVAILABLE_PATH];
 
-  const currentPhotoUrl = photoList[selectedIndex] || photoList[0];
-  const currentCaption = photos[selectedIndex]?.caption || `${turfName} Ground View`;
+  const safeIndex = selectedIndex < photoList.length ? selectedIndex : 0;
+  const fallbackUrl = isDemo ? getIllustrativeSportFallback(primarySport) : VENUE_PHOTO_UNAVAILABLE_PATH;
+  const currentPhotoUrl = failedIndices[safeIndex]
+    ? fallbackUrl
+    : photoList[safeIndex] || fallbackUrl;
+
+  const isUnavailable = !isDemo && currentPhotoUrl === VENUE_PHOTO_UNAVAILABLE_PATH;
+  const isAiGenerated = !failedIndices[safeIndex] && isAiGeneratedPhotoUrl(currentPhotoUrl);
+  const isStockPhoto =
+    currentPhotoUrl.includes('images.unsplash.com') ||
+    Boolean(photos[safeIndex]?.caption?.toLowerCase().includes('stock photo'));
+  const isIllustrative = isDemo || Boolean(failedIndices[safeIndex]) || isIllustrativePhotoUrl(currentPhotoUrl);
+
+  const currentCaption = isUnavailable
+    ? `${turfName} — Venue Photo Unavailable (Ground inspection pending)`
+    : failedIndices[safeIndex]
+      ? `${turfName} — Illustrative Court Fallback Diagram`
+      : photos[safeIndex]?.caption ||
+        (isIllustrative
+          ? `${turfName} — Illustrative Demo Preview`
+          : `${turfName} Ground View`);
+
+  const handleImageError = (index: number) => {
+    setFailedIndices((prev) => (prev[index] ? prev : { ...prev, [index]: true }));
+  };
 
   const handleNext = () => {
     setSelectedIndex((prev) => (prev + 1) % photoList.length);
@@ -42,12 +74,19 @@ export default function TurfGallery({
       <div className="relative rounded-[32px] overflow-hidden border-2 border-[#03594d] shadow-maggie-lg bg-[#03594d]/10 aspect-[16/9] sm:aspect-[21/9]">
         <Image
           src={currentPhotoUrl}
-          alt={`${turfName} - photo ${selectedIndex + 1}`}
+          alt={
+            isAiGenerated
+              ? `${turfName} AI-generated illustrative demo image ${safeIndex + 1}`
+              : isIllustrative
+                ? `${turfName} illustrative court diagram ${safeIndex + 1}`
+                : `${turfName} venue photo ${safeIndex + 1}`
+          }
           fill
           priority
           sizes="(max-width: 768px) 100vw, 1200px"
           className="object-cover transition-all duration-300 cursor-pointer"
           onClick={() => setIsFullscreen(true)}
+          onError={() => handleImageError(safeIndex)}
         />
 
         {/* Gradient Overlay for Top Badges readability */}
@@ -56,16 +95,42 @@ export default function TurfGallery({
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
-              <span>📸</span>
-              <span>Real Venue Photo</span>
-            </span>
-            <span className="hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#82eda6] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
-              ✓ Ground Inspected
-            </span>
+            {isUnavailable ? (
+              <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
+                <span>📷</span>
+                <span>Venue Photo Unavailable</span>
+              </span>
+            ) : isIllustrative ? (
+              <>
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
+                  <span>{isAiGenerated ? '🤖' : isStockPhoto ? '📷' : '🎨'}</span>
+                  <span>
+                    {isAiGenerated
+                      ? 'AI-generated illustrative demo image'
+                      : isStockPhoto
+                        ? 'Stock photo, illustrative'
+                        : 'Illustrative Demo Preview'}
+                  </span>
+                </span>
+                <span className="hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#82eda6] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
+                  Fictional Venue &bull; Not a Real Venue Photograph
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
+                  <span>📸</span>
+                  <span>Verified Venue Photo</span>
+                </span>
+                <span className="hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#82eda6] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
+                  ✓ Ground Inspected
+                </span>
+              </>
+            )}
           </div>
 
           <button
+            type="button"
             onClick={() => setIsFullscreen(true)}
             className="px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-white/90 text-[#03594d] border border-[#03594d] shadow-maggie-sm hover:bg-[#ffff94] transition-all cursor-pointer flex items-center gap-1.5"
           >
@@ -78,7 +143,7 @@ export default function TurfGallery({
         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between z-10 text-white">
           <div className="max-w-[70%]">
             <span className="text-[11px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20 inline-block mb-1">
-              Photo {selectedIndex + 1} of {photoList.length}
+              {isIllustrative ? 'Illustration' : 'Photo'} {safeIndex + 1} of {photoList.length}
             </span>
             <p className="text-sm sm:text-base font-black drop-shadow-md text-white line-clamp-1">
               {currentCaption}
@@ -89,6 +154,7 @@ export default function TurfGallery({
           {photoList.length > 1 && (
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handlePrev}
                 aria-label="Previous Photo"
                 className="w-10 h-10 rounded-full bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie flex items-center justify-center font-black text-sm hover:bg-[#ffff94] hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -96,6 +162,7 @@ export default function TurfGallery({
                 &larr;
               </button>
               <button
+                type="button"
                 onClick={handleNext}
                 aria-label="Next Photo"
                 className="w-10 h-10 rounded-full bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie flex items-center justify-center font-black text-sm hover:bg-[#ffff94] hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -111,10 +178,12 @@ export default function TurfGallery({
       {photoList.length > 1 && (
         <div className="mt-3 flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
           {photoList.map((url, idx) => {
-            const isSelected = idx === selectedIndex;
+            const isSelected = idx === safeIndex;
+            const thumbSrc = failedIndices[idx] ? fallbackUrl : url;
             return (
               <button
                 key={idx}
+                type="button"
                 onClick={() => setSelectedIndex(idx)}
                 className={`relative w-20 h-16 sm:w-28 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                   isSelected
@@ -123,11 +192,12 @@ export default function TurfGallery({
                 }`}
               >
                 <Image
-                  src={url}
+                  src={thumbSrc}
                   alt={`${turfName} thumbnail ${idx + 1}`}
                   fill
                   sizes="120px"
                   className="object-cover"
+                  onError={() => handleImageError(idx)}
                 />
                 {isSelected && (
                   <div className="absolute inset-0 bg-[#ffff94]/20 pointer-events-none" />
@@ -153,10 +223,14 @@ export default function TurfGallery({
           >
             <div>
               <span className="text-white text-base sm:text-lg font-black tracking-tight block">
-                {turfName} &bull; Photos ({selectedIndex + 1}/{photoList.length})
+                {turfName} &bull; {isIllustrative ? 'Illustrative Preview' : 'Photos'} ({safeIndex + 1}/{photoList.length})
               </span>
               <span className="text-white/70 text-xs font-semibold">
-                Uploaded by venue owner & verified on GoTurf
+                {isIllustrative
+                  ? isAiGenerated
+                    ? 'Fictional demo venue • AI-generated illustrative image (not a real venue photograph)'
+                    : 'Fictional demo venue • Illustrative fallback asset (not real venue photography)'
+                  : 'Uploaded by venue owner & verified on GoTurf'}
               </span>
             </div>
 
@@ -180,6 +254,7 @@ export default function TurfGallery({
                 fill
                 sizes="100vw"
                 className="object-contain rounded-2xl"
+                onError={() => handleImageError(safeIndex)}
               />
             </div>
 

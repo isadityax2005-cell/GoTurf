@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { Turf } from '@/types/database';
 
 interface AdminSlot {
   id: string;
@@ -12,15 +13,53 @@ interface AdminSlot {
   courtId: string;
 }
 
+interface CourtOption {
+  id: string;
+  name: string;
+  turfName?: string;
+}
+
 export default function AvailabilityManagementPage() {
   const [selectedCourtId, setSelectedCourtId] = useState('court-1');
-  const [selectedDateStr, setSelectedDateStr] = useState('2026-10-12');
+  const [selectedDateStr, setSelectedDateStr] = useState(() => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  });
   const [statusNote, setStatusNote] = useState<string | null>(null);
 
-  const courts = [
+  const [courts, setCourts] = useState<CourtOption[]>([
     { id: 'court-1', name: 'Court 1 - Box Cricket' },
     { id: 'court-2', name: 'Arena B - Football' },
-  ];
+  ]);
+
+  useEffect(() => {
+    async function loadCourts() {
+      try {
+        const res = await fetch('/api/owner/my-turfs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.turfs) && data.turfs.length > 0) {
+          const loadedCourts: CourtOption[] = [];
+          data.turfs.forEach((t: Turf) => {
+            if (t.courts && t.courts.length > 0) {
+              t.courts.forEach((c) => {
+                loadedCourts.push({
+                  id: c.id,
+                  name: `${t.name}: ${c.name} (${c.sport})`,
+                  turfName: t.name,
+                });
+              });
+            }
+          });
+          if (loadedCourts.length > 0) {
+            setCourts(loadedCourts);
+            setSelectedCourtId(loadedCourts[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load owner courts:', err);
+      }
+    }
+    loadCourts();
+  }, []);
 
   const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
 
@@ -47,6 +86,13 @@ export default function AvailabilityManagementPage() {
     );
     setStatusNote(`🔒 Blocked slot ${modalSlot.startTimeIST} (${blockReason}). Offline lock synced.`);
     setModalSlot(null);
+  };
+
+  const handleUnblock = (slotId: string, slotTime: string) => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === slotId ? { ...s, status: 'available' } : s))
+    );
+    setStatusNote(`🔓 Unblocked slot ${slotTime}. Slot is now available for player reservations.`);
   };
 
   return (
@@ -93,11 +139,10 @@ export default function AvailabilityManagementPage() {
                 <button
                   key={court.id}
                   onClick={() => setSelectedCourtId(court.id)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase transition-all border-2 border-[#03594d] ${
-                    selectedCourt?.id === court.id
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase transition-all border-2 border-[#03594d] ${selectedCourt?.id === court.id
                       ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
                       : 'bg-[#f9f8f4] text-[#03594d] hover:bg-[#ffff94]'
-                  }`}
+                    }`}
                 >
                   {court.name}
                 </button>
@@ -130,13 +175,12 @@ export default function AvailabilityManagementPage() {
               return (
                 <div
                   key={slot.id}
-                  className={`p-4 rounded-2xl border-2 border-[#03594d] flex flex-col justify-between text-[#03594d] ${
-                    isFree
+                  className={`p-4 rounded-2xl border-2 border-[#03594d] flex flex-col justify-between text-[#03594d] ${isFree
                       ? 'bg-white shadow-maggie-sm hover:shadow-maggie'
                       : isBlocked
-                      ? 'bg-[#ffff94] shadow-maggie-sm'
-                      : 'bg-[#f9f8f4]/60 border-[#03594d]/40 opacity-70'
-                  }`}
+                        ? 'bg-[#ffff94] shadow-maggie-sm'
+                        : 'bg-[#f9f8f4]/60 border-[#03594d]/40 opacity-70'
+                    }`}
                 >
                   <div>
                     <span className="text-xs font-black block">{slot.startTimeIST}</span>
@@ -157,8 +201,15 @@ export default function AvailabilityManagementPage() {
                     )}
 
                     {isBlocked && (
-                      <div className="text-[10px] font-black uppercase text-[#03594d] flex items-center justify-between">
-                        <span>🔒 Offline Block</span>
+                      <div className="text-[10px] font-black uppercase text-[#03594d] flex items-center justify-between gap-1">
+                        <span>🔒 Blocked</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnblock(slot.id, slot.startTimeIST)}
+                          className="px-2 py-0.5 rounded bg-white hover:bg-rose-100 text-rose-800 border border-rose-500 text-[10px] font-black uppercase transition-colors cursor-pointer"
+                        >
+                          Unblock
+                        </button>
                       </div>
                     )}
 

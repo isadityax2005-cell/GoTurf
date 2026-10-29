@@ -3,7 +3,7 @@
 // Tests domain models, interval overlapping math, and paise currency integrity
 // ============================================================================
 
-import type { Turf, Court, Booking, PriceRule } from '../types/database';
+import type { Turf, Court, PriceRule } from '../types/database';
 
 function intervalsOverlap(
   startA: Date,
