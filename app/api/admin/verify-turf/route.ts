@@ -41,15 +41,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Insert verification audit log
+    // Insert verification audit log with schema-conforming columns
     await supabaseAdmin.from('audit_log').insert({
+      actor_id: identity.user.id,
       action: `turf.${finalDbStatus}`,
-      entity_type: 'turf',
-      entity_id: turfId,
-      details: {
+      target_type: 'turf',
+      target_id: turfId,
+      metadata: {
         turfName: updatedTurf.name,
         newStatus: finalDbStatus,
         rejectionReason: rejectionReason || null,
+        adminEmail: identity.user.email || null,
         timestamp: new Date().toISOString(),
       },
     });

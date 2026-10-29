@@ -15,8 +15,9 @@ function LoginForm() {
   // Primary Mode: 'signin' or 'signup'
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
 
-  // Sign In Method: 'password' (default) or 'otp'
+  // Sign In Method: 'password' (default), 'otp', or 'reset'
   const [signInWithOtp, setSignInWithOtp] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Form Fields
   const [role, setRole] = useState<UserRole>('player');
@@ -106,6 +107,28 @@ function LoginForm() {
       const destination = determineRedirect(userRole);
       router.push(destination);
       router.refresh();
+    }
+  };
+
+  // 1b. RESET PASSWORD VIA EMAIL
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/profile?reset=true`,
+    });
+
+    setIsLoading(false);
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      setSuccessMessage(`✨ A password reset email has been sent to ${cleanEmail}. Click the link in the email to set your new password.`);
     }
   };
 
@@ -260,6 +283,7 @@ function LoginForm() {
           type="button"
           onClick={() => {
             setActiveTab('signin');
+            setIsResettingPassword(false);
             setErrorMessage(null);
             setSuccessMessage(null);
           }}
@@ -275,6 +299,7 @@ function LoginForm() {
           type="button"
           onClick={() => {
             setActiveTab('signup');
+            setIsResettingPassword(false);
             setErrorMessage(null);
             setSuccessMessage(null);
           }}
@@ -303,7 +328,46 @@ function LoginForm() {
       {/* TAB 1: SIGN IN FORM */}
       {activeTab === 'signin' && (
         <>
-          {!signInWithOtp ? (
+          {isResettingPassword ? (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="p-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d]">
+                🔑 Enter your account email to receive a password recovery link.
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+                  Account Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? 'Sending Link...' : 'Send Recovery Link →'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResettingPassword(false);
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }}
+                className="w-full text-center text-xs font-bold text-[#03594d] underline cursor-pointer"
+              >
+                &larr; Back to Password Sign In
+              </button>
+            </form>
+          ) : !signInWithOtp ? (
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
                 <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
@@ -343,6 +407,19 @@ function LoginForm() {
                   placeholder="••••••••"
                   className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
                 />
+                <div className="flex justify-end mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsResettingPassword(true);
+                      setErrorMessage(null);
+                      setSuccessMessage(null);
+                    }}
+                    className="text-[11px] font-bold text-[#03594d]/80 underline hover:text-[#03594d] cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
 
               <button

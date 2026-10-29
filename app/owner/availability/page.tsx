@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { Turf } from '@/types/database';
 
 interface AdminSlot {
   id: string;
@@ -12,15 +13,54 @@ interface AdminSlot {
   courtId: string;
 }
 
+interface CourtOption {
+  id: string;
+  name: string;
+  turfName?: string;
+}
+
 export default function AvailabilityManagementPage() {
   const [selectedCourtId, setSelectedCourtId] = useState('court-1');
-  const [selectedDateStr, setSelectedDateStr] = useState('2026-10-12');
+  const [selectedDateStr, setSelectedDateStr] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
   const [statusNote, setStatusNote] = useState<string | null>(null);
 
-  const courts = [
+  const [courts, setCourts] = useState<CourtOption[]>([
     { id: 'court-1', name: 'Court 1 - Box Cricket' },
     { id: 'court-2', name: 'Arena B - Football' },
-  ];
+  ]);
+
+  useEffect(() => {
+    async function loadCourts() {
+      try {
+        const res = await fetch('/api/owner/my-turfs');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.turfs) && data.turfs.length > 0) {
+          const loadedCourts: CourtOption[] = [];
+          data.turfs.forEach((t: Turf) => {
+            if (t.courts && t.courts.length > 0) {
+              t.courts.forEach((c) => {
+                loadedCourts.push({
+                  id: c.id,
+                  name: `${t.name}: ${c.name} (${c.sport})`,
+                  turfName: t.name,
+                });
+              });
+            }
+          });
+          if (loadedCourts.length > 0) {
+            setCourts(loadedCourts);
+            setSelectedCourtId(loadedCourts[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load owner courts:', err);
+      }
+    }
+    loadCourts();
+  }, []);
 
   const selectedCourt = courts.find((c) => c.id === selectedCourtId) || courts[0];
 

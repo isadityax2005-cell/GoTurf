@@ -131,9 +131,13 @@ export default function MaggieNavbar() {
                 </Link>
               )}
 
-              <span className="hidden sm:inline-block text-xs font-black text-[#03594d] bg-[#ffff94] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
+              <Link
+                href="/profile"
+                className="hidden sm:inline-block text-xs font-black text-[#03594d] bg-[#ffff94] hover:bg-white px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm transition-all"
+                title="View your member profile"
+              >
                 👤 {user.name}
-              </span>
+              </Link>
 
               <button
                 onClick={handleSignOut}

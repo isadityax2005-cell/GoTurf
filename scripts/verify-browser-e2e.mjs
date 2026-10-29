@@ -321,15 +321,16 @@ async function runViewport(browser, vp) {
   const failCtxPage = await ctx.newPage();
   await failCtxPage.route('**/*bandra-3.webp*', (r) => r.abort());
   await failCtxPage.route('**/_next/image?*bandra-3.webp*', (r) => r.abort());
-  await failCtxPage.goto(`${BASE_URL}/turfs/bandra-turf-arena-demo`, { waitUntil: 'load' });
+  await failCtxPage.goto(`${BASE_URL}/turfs/bandra-turf-arena-demo`, { waitUntil: 'domcontentloaded' });
+  await failCtxPage.locator('button:has(img[alt*="thumbnail 3"])').waitFor({ state: 'visible', timeout: 15000 });
   await failCtxPage.locator('button:has(img[alt*="thumbnail 3"])').click();
   await failCtxPage.waitForTimeout(1500);
   const fb = await failCtxPage.evaluate(() => {
     const hero = document.querySelector('img[alt*="illustrative"], img[alt*="venue photo"]');
     return {
       heroLoaded: Boolean(hero && hero.complete && hero.naturalWidth > 0),
-      overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-      fallbackCaption: document.body.innerText.includes('Illustrative Court Fallback'),
+      overflow: document.documentElement ? document.documentElement.scrollWidth > window.innerWidth + 1 : false,
+      fallbackCaption: (document.body?.innerText || '').includes('Illustrative Court Fallback'),
     };
   });
   res.imageFailureFallback = fb;

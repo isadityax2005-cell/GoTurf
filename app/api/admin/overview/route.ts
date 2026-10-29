@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRequestIdentity } from '@/lib/auth/authorization';
 import { getServiceRoleClient } from '@/lib/supabase';
-import type { Profile, Turf, TurfPhoto, Court, Region } from '@/types/database';
+import type { Profile, Turf, TurfPhoto, Court, Region, Booking, AuditLog } from '@/types/database';
 
 export async function GET() {
   try {
@@ -73,6 +73,8 @@ export async function GET() {
 
     const regionMap = new Map<string, string>(regions.map((r) => [r.id, r.locality]));
     const profileMap = new Map<string, Profile>(profiles.map((p) => [p.id, p]));
+    const courtMap = new Map<string, Court>(courts.map((c) => [c.id, c]));
+    const turfMap = new Map<string, Turf>(turfs.map((t) => [t.id, t]));
 
     // Map turfs with owner, photos, court info, and locality
     const enrichedTurfs = turfs.map((t) => {
@@ -105,6 +107,47 @@ export async function GET() {
       };
     });
 
+    // 6. Fetch recent bookings for admin oversight
+    const { data: bookingsData } = await supabaseAdmin
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    const bookings = (bookingsData || []) as Booking[];
+
+    const enrichedBookings = bookings.map((b) => {
+      const court = courtMap.get(b.court_id);
+      const turf = court ? turfMap.get(court.turf_id) : undefined;
+      const player = b.player_id ? profileMap.get(b.player_id) : undefined;
+
+      return {
+        id: b.id,
+        turfName: turf?.name || 'Sports Venue',
+        courtName: court?.name || 'Court',
+        playerName: player?.name || 'Player',
+        playerEmail: player?.email || '',
+        playerPhone: player?.phone || '',
+        status: b.status,
+        pricePaise: b.price_paise,
+        advanceAmountPaise: b.advance_amount_paise,
+        balanceAmountPaise: b.balance_amount_paise,
+        checkInOtp: b.check_in_otp,
+        createdAt: b.created_at,
+        startAt: b.start_at,
+        endAt: b.end_at,
+      };
+    });
+
+    // 7. Fetch recent audit logs
+    const { data: auditData } = await supabaseAdmin
+      .from('audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    const auditLogs = (auditData || []) as AuditLog[];
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -113,10 +156,13 @@ export async function GET() {
         approvedCount: approvedTurfs.length,
         totalOwners: owners.length,
         totalUsers: profiles.length,
+        totalBookings: bookings.length,
       },
       pendingTurfs,
       approvedTurfs,
       owners: ownersWithTurfs,
+      bookings: enrichedBookings,
+      auditLogs,
     });
   } catch (err: unknown) {
     console.error('Admin overview handler error:', err);

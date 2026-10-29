@@ -108,14 +108,14 @@ export async function POST(request: Request) {
       await supabaseAdmin.from('turf_photos').insert(photoRows);
     }
 
-    // 7. Insert Audit Log
+    // 7. Insert Audit Log with schema-conforming columns
     try {
       await supabaseAdmin.from('audit_log').insert({
         actor_id: finalOwnerId,
         action: 'turf.submitted',
-        entity_type: 'turf',
-        entity_id: turf.id,
-        details: {
+        target_type: 'turf',
+        target_id: turf.id,
+        metadata: {
           name,
           contactNumber,
           locality,

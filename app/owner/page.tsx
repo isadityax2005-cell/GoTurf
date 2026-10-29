@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import { createClient } from '@/lib/supabase/client';
 import type { Turf } from '@/types/database';
 
 interface ArrivalBooking {
@@ -22,10 +23,24 @@ export default function OwnerDashboardPage() {
   const [notification, setNotification] = useState<string | null>(null);
   const [myTurfs, setMyTurfs] = useState<Turf[]>([]);
   const [loadingTurfs, setLoadingTurfs] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('owner');
 
   useEffect(() => {
     async function loadOwnerTurfs() {
       try {
+        const supabase = createClient();
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', authData.user.id)
+            .maybeSingle<{ role: string }>();
+          if (profile?.role) {
+            setCurrentUserRole(profile.role);
+          }
+        }
+
         const res = await fetch('/api/owner/my-turfs');
         const data = await res.json();
         if (data.success && Array.isArray(data.turfs)) {
@@ -117,17 +132,19 @@ export default function OwnerDashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 text-xs font-black">
+          {currentUserRole === 'admin' && (
+            <Link
+              href="/admin"
+              className="px-4 py-2 rounded-full bg-[#ffff94] hover:bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm transition-all uppercase text-[11px]"
+            >
+              ⚡ Admin Control Suite
+            </Link>
+          )}
           <Link
-            href="/admin"
-            className="px-4 py-2 rounded-full bg-[#ffff94] hover:bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm transition-all uppercase text-[11px]"
-          >
-            ⚡ Admin Control Suite
-          </Link>
-          <Link
-            href="/login"
+            href="/profile"
             className="px-4 py-2 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm transition-all uppercase text-[11px]"
           >
-            Switch Account
+            👤 Profile
           </Link>
         </div>
       </header>
