@@ -209,9 +209,8 @@ function LoginForm() {
     setSuccessMessage(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    const redirectUrl = `${window.location.origin}/auth/callback${
-      redirectParam ? `?next=${encodeURIComponent(redirectParam)}` : ''
-    }`;
+    const redirectUrl = `${window.location.origin}/auth/callback${redirectParam ? `?next=${encodeURIComponent(redirectParam)}` : ''
+      }`;
 
     const { error } = await supabase.auth.signInWithOtp({
       email: cleanEmail,
@@ -287,11 +286,10 @@ function LoginForm() {
             setErrorMessage(null);
             setSuccessMessage(null);
           }}
-          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-            activeTab === 'signin'
+          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'signin'
               ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
               : 'text-[#03594d]/70 hover:text-[#03594d]'
-          }`}
+            }`}
         >
           Sign In
         </button>
@@ -303,11 +301,10 @@ function LoginForm() {
             setErrorMessage(null);
             setSuccessMessage(null);
           }}
-          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-            activeTab === 'signup'
+          className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'signup'
               ? 'bg-[#ffff94] text-[#03594d] border-2 border-[#03594d] shadow-maggie-sm font-black'
               : 'text-[#03594d]/70 hover:text-[#03594d]'
-          }`}
+            }`}
         >
           Create Account
         </button>
@@ -431,184 +428,184 @@ function LoginForm() {
               </button>
             </form>
           ) : (
-            // Email OTP Sign In
-            <div className="space-y-4">
-              {!otpSent ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                      Your Email Address
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@example.com"
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isLoading ? 'Sending...' : 'Send 6-Digit Code'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSignInWithOtp(false)}
-                    className="w-full text-center text-xs font-bold text-[#03594d] underline"
-                  >
-                    &larr; Back to Password Login
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  <div className="p-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d]">
-                    📩 6-digit code sent to <strong>{email}</strong>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-                      Enter 6-Digit Code
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="123456"
-                      className="w-full px-4 py-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-center text-lg font-mono font-black tracking-widest text-[#03594d] placeholder-[#03594d]/30 focus:outline-none focus:bg-white transition-colors"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || otpCode.length < 6}
-                    className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify & Enter GoTurf →'}
-                  </button>
-
-                  <div className="flex justify-between items-center text-xs font-bold pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setOtpSent(false)}
-                      className="text-[#03594d] underline"
-                    >
-                      Change Email
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignInWithOtp(false)}
-                      className="text-[#03594d] underline"
-                    >
-                      Use Password Instead
-                    </button>
-                  </div>
-                </form>
-              )}
+      // Email OTP Sign In
+      <div className="space-y-4">
+        {!otpSent ? (
+          <form onSubmit={handleSendOtp} className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+                Your Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@example.com"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+              />
             </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? 'Sending...' : 'Send 6-Digit Code'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSignInWithOtp(false)}
+              className="w-full text-center text-xs font-bold text-[#03594d] underline"
+            >
+              &larr; Back to Password Login
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <div className="p-3 rounded-xl bg-[#ffff94] border-2 border-[#03594d] text-xs font-bold text-[#03594d]">
+              📩 6-digit code sent to <strong>{email}</strong>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+                Enter 6-Digit Code
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+                className="w-full px-4 py-3 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-center text-lg font-mono font-black tracking-widest text-[#03594d] placeholder-[#03594d]/30 focus:outline-none focus:bg-white transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || otpCode.length < 6}
+              className="w-full py-3.5 px-4 rounded-full font-black text-xs uppercase tracking-wider bg-[#03594d] text-[#82eda6] border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? 'Verifying...' : 'Verify & Enter GoTurf →'}
+            </button>
+
+            <div className="flex justify-between items-center text-xs font-bold pt-1">
+              <button
+                type="button"
+                onClick={() => setOtpSent(false)}
+                className="text-[#03594d] underline"
+              >
+                Change Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignInWithOtp(false)}
+                className="text-[#03594d] underline"
+              >
+                Use Password Instead
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
           )}
-        </>
-      )}
+    </>
+  )
+}
 
-      {/* TAB 2: CREATE ACCOUNT FORM */}
-      {activeTab === 'signup' && (
-        <form onSubmit={handleSignUp} className="space-y-4">
-          {/* Account Role Selector */}
-          <div>
-            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              I am joining as:
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('player')}
-                className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-                  role === 'player'
-                    ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
-                    : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
-                }`}
-              >
-                ⚽ Player
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('owner')}
-                className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${
-                  role === 'owner'
-                    ? 'bg-[#ffff94] text-[#03594d] shadow-maggie-sm'
-                    : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
-                }`}
-              >
-                🏟️ Turf Owner
-              </button>
-            </div>
-            <p className="mt-2 text-[11px] font-semibold text-[#03594d]/75">
-              New accounts start as players. Turf-owner access requires verification and approval.
-            </p>
-          </div>
+{/* TAB 2: CREATE ACCOUNT FORM */ }
+{
+  activeTab === 'signup' && (
+    <form onSubmit={handleSignUp} className="space-y-4">
+      {/* Account Role Selector */}
+      <div>
+        <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+          I am joining as:
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setRole('player')}
+            className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${role === 'player'
+                ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
+                : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
+              }`}
+          >
+            ⚽ Player
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole('owner')}
+            className={`py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-[#03594d] transition-all cursor-pointer ${role === 'owner'
+                ? 'bg-[#ffff94] text-[#03594d] shadow-maggie-sm'
+                : 'bg-[#f9f8f4] text-[#03594d]/70 hover:bg-white'
+              }`}
+          >
+            🏟️ Turf Owner
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] font-semibold text-[#03594d]/75">
+          New accounts start as players. Turf-owner access requires verification and approval.
+        </p>
+      </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder={role === 'player' ? 'Aditya Singh' : 'Rohan Mehta'}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-            />
-          </div>
+      <div>
+        <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+          Full Name
+        </label>
+        <input
+          type="text"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder={role === 'player' ? 'Aditya Singh' : 'Rohan Mehta'}
+          className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+        />
+      </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              WhatsApp / Mobile Number
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98200 12345"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-            />
-          </div>
+      <div>
+        <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+          WhatsApp / Mobile Number
+        </label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="+91 98200 12345"
+          className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+        />
+      </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-            />
-          </div>
+      <div>
+        <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+          Email Address
+        </label>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="name@example.com"
+          className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+        />
+      </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
-              Create Password (min. 8 characters)
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
-            />
-          </div>
+      <div>
+        <label className="block text-xs font-black uppercase text-[#03594d] mb-1.5">
+          Create Password (min. 8 characters)
+        </label>
+        <input
+          type="password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          className="w-full px-4 py-2.5 rounded-xl bg-[#f9f8f4] border-2 border-[#03594d] text-xs font-bold text-[#03594d] placeholder-[#03594d]/40 focus:outline-none focus:bg-white transition-colors"
+        />
+      </div>
 
           <button
             type="submit"

@@ -42,8 +42,8 @@ export async function POST(request: Request) {
       .ilike('locality', `%${locality || 'Bandra'}%`)
       .limit(1);
 
-    const regionId = regions && regions.length > 0 
-      ? regions[0].id 
+    const regionId = regions && regions.length > 0
+      ? regions[0].id
       : '10000000-0000-0000-0000-000000000001';
 
     // 3. Generate clean unique slug
@@ -113,15 +113,15 @@ export async function POST(request: Request) {
       await supabaseAdmin.from('audit_log').insert({
         actor_id: finalOwnerId,
         action: 'turf.submitted',
-        target_type: 'turf',
-        target_id: turf.id,
-        metadata: {
-          name,
-          contactNumber,
-          locality,
-          photosCount: photos?.length || 0,
-        },
-      });
+          target_type: 'turf',
+          target_id: turf.id,
+          metadata: {
+            name,
+            contactNumber,
+            locality,
+            photosCount: photos?.length || 0,
+          },
+        });
     } catch {
       // Non-fatal
     }

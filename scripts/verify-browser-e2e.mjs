@@ -87,7 +87,7 @@ function freePort() {
       for (const pidStr of pids.split(/\s+/)) {
         const pid = Number(pidStr);
         if (pid && pid !== process.pid) {
-          try { process.kill(pid, 'SIGKILL'); } catch {}
+          try { process.kill(pid, 'SIGKILL'); } catch { }
         }
       }
     }
@@ -180,7 +180,7 @@ async function inspect(page) {
       });
     } catch (err) {
       if (attempt === 2) throw err;
-      await page.waitForLoadState('load').catch(() => {});
+      await page.waitForLoadState('load').catch(() => { });
       await page.waitForTimeout(500);
     }
   }

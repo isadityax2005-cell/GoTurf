@@ -103,8 +103,7 @@ export default function OwnerDashboardPage() {
           )
         );
         setNotification(
-          `✅ Collected ₹${booking.balanceDue.toLocaleString('en-IN')} via ${
-            method === 'cash' ? 'Cash' : 'Venue UPI'
+          `✅ Collected ₹${booking.balanceDue.toLocaleString('en-IN')} via ${method === 'cash' ? 'Cash' : 'Venue UPI'
           } for ${booking.captain} (PIN: ${booking.pin}). Court access activated!`
         );
       } else {
@@ -240,9 +239,8 @@ export default function OwnerDashboardPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border border-[#03594d] ${
-                              isApproved ? 'bg-[#82eda6]' : 'bg-[#ffff94]'
-                            }`}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border border-[#03594d] ${isApproved ? 'bg-[#82eda6]' : 'bg-[#ffff94]'
+                              }`}
                           >
                             {isApproved ? '✓ Live & Bookable' : '⏳ Pending Review'}
                           </span>

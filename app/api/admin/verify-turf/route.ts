@@ -45,16 +45,16 @@ export async function POST(request: Request) {
     await supabaseAdmin.from('audit_log').insert({
       actor_id: identity.user.id,
       action: `turf.${finalDbStatus}`,
-      target_type: 'turf',
-      target_id: turfId,
-      metadata: {
-        turfName: updatedTurf.name,
-        newStatus: finalDbStatus,
-        rejectionReason: rejectionReason || null,
-        adminEmail: identity.user.email || null,
-        timestamp: new Date().toISOString(),
-      },
-    });
+        target_type: 'turf',
+        target_id: turfId,
+        metadata: {
+          turfName: updatedTurf.name,
+          newStatus: finalDbStatus,
+          rejectionReason: rejectionReason || null,
+          adminEmail: identity.user.email || null,
+          timestamp: new Date().toISOString(),
+        },
+      });
 
     return NextResponse.json({
       success: true,

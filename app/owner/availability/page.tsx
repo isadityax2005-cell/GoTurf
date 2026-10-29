@@ -133,11 +133,10 @@ export default function AvailabilityManagementPage() {
                 <button
                   key={court.id}
                   onClick={() => setSelectedCourtId(court.id)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase transition-all border-2 border-[#03594d] ${
-                    selectedCourt?.id === court.id
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase transition-all border-2 border-[#03594d] ${selectedCourt?.id === court.id
                       ? 'bg-[#03594d] text-[#82eda6] shadow-maggie-sm'
                       : 'bg-[#f9f8f4] text-[#03594d] hover:bg-[#ffff94]'
-                  }`}
+                    }`}
                 >
                   {court.name}
                 </button>
@@ -170,13 +169,12 @@ export default function AvailabilityManagementPage() {
               return (
                 <div
                   key={slot.id}
-                  className={`p-4 rounded-2xl border-2 border-[#03594d] flex flex-col justify-between text-[#03594d] ${
-                    isFree
+                  className={`p-4 rounded-2xl border-2 border-[#03594d] flex flex-col justify-between text-[#03594d] ${isFree
                       ? 'bg-white shadow-maggie-sm hover:shadow-maggie'
                       : isBlocked
-                      ? 'bg-[#ffff94] shadow-maggie-sm'
-                      : 'bg-[#f9f8f4]/60 border-[#03594d]/40 opacity-70'
-                  }`}
+                        ? 'bg-[#ffff94] shadow-maggie-sm'
+                        : 'bg-[#f9f8f4]/60 border-[#03594d]/40 opacity-70'
+                    }`}
                 >
                   <div>
                     <span className="text-xs font-black block">{slot.startTimeIST}</span>
