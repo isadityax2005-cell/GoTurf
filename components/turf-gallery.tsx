@@ -8,6 +8,7 @@ import {
   getIllustrativeSportFallback,
   isAiGeneratedPhotoUrl,
   isIllustrativePhotoUrl,
+  VENUE_PHOTO_UNAVAILABLE_PATH,
 } from '@/lib/utils/turf-photo';
 
 interface TurfGalleryProps {
@@ -30,27 +31,30 @@ export default function TurfGallery({
   // Normalize photos into usable URLs
   const photoList: string[] =
     photos.length > 0
-      ? photos.map((p) => getTurfPhotoUrl(p, primarySport))
-      : [getIllustrativeSportFallback(primarySport)];
+      ? photos.map((p) => getTurfPhotoUrl(p, primarySport, isDemo))
+      : [isDemo ? getIllustrativeSportFallback(primarySport) : VENUE_PHOTO_UNAVAILABLE_PATH];
 
   const safeIndex = selectedIndex < photoList.length ? selectedIndex : 0;
-  const fallbackUrl = getIllustrativeSportFallback(primarySport);
+  const fallbackUrl = isDemo ? getIllustrativeSportFallback(primarySport) : VENUE_PHOTO_UNAVAILABLE_PATH;
   const currentPhotoUrl = failedIndices[safeIndex]
     ? fallbackUrl
     : photoList[safeIndex] || fallbackUrl;
 
+  const isUnavailable = !isDemo && currentPhotoUrl === VENUE_PHOTO_UNAVAILABLE_PATH;
   const isAiGenerated = !failedIndices[safeIndex] && isAiGeneratedPhotoUrl(currentPhotoUrl);
   const isStockPhoto =
     currentPhotoUrl.includes('images.unsplash.com') ||
     Boolean(photos[safeIndex]?.caption?.toLowerCase().includes('stock photo'));
   const isIllustrative = isDemo || Boolean(failedIndices[safeIndex]) || isIllustrativePhotoUrl(currentPhotoUrl);
 
-  const currentCaption = failedIndices[safeIndex]
-    ? `${turfName} — Illustrative Court Fallback Diagram`
-    : photos[safeIndex]?.caption ||
-      (isIllustrative
-        ? `${turfName} — Illustrative Demo Preview`
-        : `${turfName} Ground View`);
+  const currentCaption = isUnavailable
+    ? `${turfName} — Venue Photo Unavailable (Ground inspection pending)`
+    : failedIndices[safeIndex]
+      ? `${turfName} — Illustrative Court Fallback Diagram`
+      : photos[safeIndex]?.caption ||
+        (isIllustrative
+          ? `${turfName} — Illustrative Demo Preview`
+          : `${turfName} Ground View`);
 
   const handleImageError = (index: number) => {
     setFailedIndices((prev) => (prev[index] ? prev : { ...prev, [index]: true }));
@@ -91,7 +95,12 @@ export default function TurfGallery({
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            {isIllustrative ? (
+            {isUnavailable ? (
+              <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
+                <span>📷</span>
+                <span>Venue Photo Unavailable</span>
+              </span>
+            ) : isIllustrative ? (
               <>
                 <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm flex items-center gap-1.5">
                   <span>{isAiGenerated ? '🤖' : isStockPhoto ? '📷' : '🎨'}</span>
@@ -121,6 +130,7 @@ export default function TurfGallery({
           </div>
 
           <button
+            type="button"
             onClick={() => setIsFullscreen(true)}
             className="px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-white/90 text-[#03594d] border border-[#03594d] shadow-maggie-sm hover:bg-[#ffff94] transition-all cursor-pointer flex items-center gap-1.5"
           >
@@ -144,6 +154,7 @@ export default function TurfGallery({
           {photoList.length > 1 && (
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handlePrev}
                 aria-label="Previous Photo"
                 className="w-10 h-10 rounded-full bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie flex items-center justify-center font-black text-sm hover:bg-[#ffff94] hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -151,6 +162,7 @@ export default function TurfGallery({
                 &larr;
               </button>
               <button
+                type="button"
                 onClick={handleNext}
                 aria-label="Next Photo"
                 className="w-10 h-10 rounded-full bg-white text-[#03594d] border-2 border-[#03594d] shadow-maggie flex items-center justify-center font-black text-sm hover:bg-[#ffff94] hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -171,6 +183,7 @@ export default function TurfGallery({
             return (
               <button
                 key={idx}
+                type="button"
                 onClick={() => setSelectedIndex(idx)}
                 className={`relative w-20 h-16 sm:w-28 sm:h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                   isSelected

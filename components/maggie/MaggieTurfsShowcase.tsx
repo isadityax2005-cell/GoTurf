@@ -7,9 +7,7 @@ import { DEMO_TURFS } from '@/lib/data/turfs';
 import { gsap } from '@/lib/gsap';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import {
-  getTurfPhotoUrl,
-  getIllustrativeSportFallback,
-  isIllustrativePhotoUrl,
+  resolveTurfDisplayPhoto,
 } from '@/lib/utils/turf-photo';
 
 import type { Turf } from '@/types/database';
@@ -35,8 +33,13 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
       try {
         const res = await fetch('/api/turfs');
         const data = await res.json();
-        if (data.success && Array.isArray(data.turfs) && data.turfs.length > 0) {
-          setTurfs(data.turfs);
+        if (data.success && Array.isArray(data.turfs)) {
+          if (data.turfs.length > 0) {
+            setTurfs(data.turfs);
+          } else {
+            // Live catalogue has 0 venues yet, show interactive Mumbai demo previews
+            setTurfs(DEMO_TURFS.filter((t) => t.status === 'approved'));
+          }
         }
       } catch (err) {
         console.warn('Failed to load live turfs from Supabase, using seed:', err);
@@ -104,12 +107,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
           {filtered.map((turf) => {
             const courts = turf.courts || [];
             const sports = Array.from(new Set(courts.map((c) => c.sport)));
-            const primarySport = sports[0] || 'cricket';
-            const fallbackUrl = getIllustrativeSportFallback(primarySport);
-            const resolvedUrl = getTurfPhotoUrl(turf.photos?.[0], primarySport);
-            const photoUrl = failedImages[turf.id] ? fallbackUrl : resolvedUrl;
-            const isIllustrative =
-              turf.is_demo || Boolean(failedImages[turf.id]) || isIllustrativePhotoUrl(photoUrl);
+            const photoInfo = resolveTurfDisplayPhoto(turf, Boolean(failedImages[turf.id]));
 
             return (
               <div key={turf.id} className="turf-showcase-card h-full">
@@ -118,10 +116,10 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
                   className="h-full bg-white text-[#03594d] overflow-hidden flex flex-col justify-between"
                 >
                   {/* Photo Header */}
-                  <div className="relative w-full h-44 sm:h-48 overflow-hidden border-b-2 border-[#03594d] bg-[#03594d]/10">
+                  <div className="relative w-full aspect-[16/9] overflow-hidden border-b-2 border-[#03594d] bg-[#03594d]/10">
                     <Image
-                      src={photoUrl}
-                      alt={isIllustrative ? `${turf.name} — illustrative court preview` : turf.name}
+                      src={photoInfo.photoUrl}
+                      alt={photoInfo.altText}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
@@ -129,20 +127,20 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
                         setFailedImages((prev) => ({ ...prev, [turf.id]: true }))
                       }
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25 pointer-events-none" />
 
-                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
+                    <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start gap-1.5 flex-wrap pointer-events-none">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
                         📍 {turf.region?.locality}
                       </span>
                       <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
-                        {turf.is_demo ? '🎨 Demo • Illustrative' : '★ Verified Venue'}
+                        {photoInfo.badgeLabel}
                       </span>
                     </div>
 
-                    {(turf.photos?.length || 0) > 1 && (
-                      <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black border border-white/20">
-                        📸 {turf.photos?.length} {isIllustrative ? 'Previews' : 'Photos'}
+                    {(turf.photos?.length || 0) > 1 && !photoInfo.isUnavailable && (
+                      <div className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black border border-white/20">
+                        📸 {turf.photos?.length} {photoInfo.isIllustrative ? 'Previews' : 'Photos'}
                       </div>
                     )}
                   </div>

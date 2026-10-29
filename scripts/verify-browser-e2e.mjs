@@ -74,21 +74,30 @@ function redactToken(token) {
 function killGroup(child) {
   if (!child?.pid) return;
   try {
-    process.kill(-child.pid, 'SIGKILL');
+    child.kill('SIGKILL');
   } catch {
-    try { child.kill('SIGKILL'); } catch { /* ignore */ }
+    /* ignore */
   }
 }
 
 function freePort() {
   try {
-    execSync(`lsof -ti tcp:${PORT} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+    const pids = execSync(`lsof -ti tcp:${PORT}`, { stdio: ['pipe', 'pipe', 'ignore'] }).toString().trim();
+    if (pids) {
+      for (const pidStr of pids.split(/\s+/)) {
+        const pid = Number(pidStr);
+        if (pid && pid !== process.pid) {
+          try { process.kill(pid, 'SIGKILL'); } catch {}
+        }
+      }
+    }
   } catch { /* ignore */ }
 }
 
 async function startServer() {
   freePort();
   let output = '';
+  console.log(`[E2E] Starting Next.js dev server on port ${PORT}...`);
   const child = spawn(path.join(ROOT, 'node_modules/.bin/next'), ['dev', '-p', String(PORT)], {
     cwd: ROOT,
     detached: true,
@@ -100,13 +109,22 @@ async function startServer() {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  child.stdout.on('data', (c) => { output += c.toString(); });
-  child.stderr.on('data', (c) => { output += c.toString(); });
+  child.stdout.on('data', (c) => {
+    output += c.toString();
+    process.stdout.write(`[SERVER] ${c.toString()}`);
+  });
+  child.stderr.on('data', (c) => {
+    output += c.toString();
+    process.stderr.write(`[SERVER ERR] ${c.toString()}`);
+  });
   const started = Date.now();
   while (Date.now() - started < 60000) {
     try {
       const res = await fetch(`${BASE_URL}/api/turfs`);
-      if (res.ok) return child;
+      if (res.ok) {
+        console.log(`[E2E] Next.js dev server ready on ${BASE_URL} (${Date.now() - started}ms)`);
+        return child;
+      }
     } catch { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 400));
   }
@@ -114,39 +132,58 @@ async function startServer() {
   throw new Error(`dev server did not start within 60s. Output tail:\n${output.slice(-800)}`);
 }
 
-// Scroll every image into view after hydration settles, then wait for decode.
+// Scroll down to trigger any lazy images, then wait for decode.
 async function settleImages(page) {
-  await page.waitForTimeout(250);
-  await page.evaluate(async () => {
-    for (const img of Array.from(document.querySelectorAll('img'))) {
-      img.scrollIntoView({ block: 'center' });
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    window.scrollTo(0, 0);
-    await Promise.all(
-      Array.from(document.querySelectorAll('img')).map((img) =>
-        img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = () => r(); })
-      )
-    );
-  });
-  await page.waitForTimeout(250);
+  try {
+    await page.waitForTimeout(400);
+    await page.evaluate(async () => {
+      window.scrollTo(0, document.body.scrollHeight / 2);
+      await new Promise((r) => setTimeout(r, 100));
+      window.scrollTo(0, document.body.scrollHeight);
+      await new Promise((r) => setTimeout(r, 100));
+      window.scrollTo(0, 0);
+      await Promise.all(
+        Array.from(document.querySelectorAll('img')).map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((r) => {
+            const timeout = setTimeout(r, 1500);
+            img.onload = img.onerror = () => {
+              clearTimeout(timeout);
+              r();
+            };
+          });
+        })
+      );
+    });
+    await page.waitForTimeout(300);
+  } catch {
+    /* ignore settling error */
+  }
 }
 
 async function inspect(page) {
-  return page.evaluate(() => {
-    const imgs = Array.from(document.querySelectorAll('img')).map((img) => ({
-      alt: img.alt,
-      loaded: img.complete && img.naturalWidth > 0,
-      size: `${img.naturalWidth}x${img.naturalHeight}`,
-    }));
-    return {
-      innerWidth: window.innerWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-      overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-      totalImages: imgs.length,
-      brokenImages: imgs.filter((i) => !i.loaded).map((i) => i.alt),
-    };
-  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await page.evaluate(() => {
+        const imgs = Array.from(document.querySelectorAll('img')).map((img) => ({
+          alt: img.alt,
+          loaded: img.complete && img.naturalWidth > 0,
+          size: `${img.naturalWidth}x${img.naturalHeight}`,
+        }));
+        return {
+          innerWidth: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+          totalImages: imgs.length,
+          brokenImages: imgs.filter((i) => !i.loaded).map((i) => i.alt),
+        };
+      });
+    } catch (err) {
+      if (attempt === 2) throw err;
+      await page.waitForLoadState('load').catch(() => {});
+      await page.waitForTimeout(500);
+    }
+  }
 }
 
 async function bookThroughConfirmation(page, venue, slotIndex, { releaseRetry }) {
@@ -206,6 +243,9 @@ async function bookThroughConfirmation(page, venue, slotIndex, { releaseRetry })
 
 async function runViewport(browser, vp) {
   const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+  await ctx.route('**/_next/*hmr*', (r) => r.abort());
+  await ctx.route('**/_next/webpack-hmr', (r) => r.abort());
+  await ctx.route('**/_next/turbopack-hmr', (r) => r.abort());
   const page = await ctx.newPage();
   const consoleErrors = [];
   const pageErrors = [];
@@ -219,10 +259,14 @@ async function runViewport(browser, vp) {
   });
   page.on('pageerror', (e) => pageErrors.push(String(e.message).slice(0, 240)));
   page.on('request', (r) => { try { hosts.add(new URL(r.url()).host); } catch { /* ignore */ } });
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) console.log(`[NAV] Main frame navigated to: ${frame.url()}`);
+  });
 
-  const res = { viewport: vp.label };
+  const res = { viewport: vp.label, bookings: [] };
 
   // 1. Directory: every demo venue card present, images load, no overflow
+  console.log(`[E2E] [${vp.label}] 1. Directory (/turfs)...`);
   await page.goto(`${BASE_URL}/turfs`, { waitUntil: 'load' });
   await page.locator('img').first().waitFor({ state: 'visible', timeout: 20000 });
   await settleImages(page);
@@ -240,6 +284,8 @@ async function runViewport(browser, vp) {
   if (SHOT_DIR) await page.screenshot({ path: path.join(SHOT_DIR, `${vp.label}-turfs.png`), fullPage: true });
 
   // 2. Venue detail galleries
+  console.log(`[E2E] [${vp.label}] 2. Detail galleries...`);
+  await page.waitForTimeout(600);
   res.galleries = {};
   for (const v of VENUES) {
     await page.goto(`${BASE_URL}/turfs/${v.slug}`, { waitUntil: 'load' });
@@ -251,7 +297,7 @@ async function runViewport(browser, vp) {
     // click through every thumbnail and confirm the hero image decodes
     const heroChecks = [];
     for (let i = 0; i < thumbs; i++) {
-      await page.locator('img[alt*="thumbnail"]').nth(i).click();
+      await page.locator('button:has(img[alt*="thumbnail"])').nth(i).click();
       await page.waitForTimeout(250);
       heroChecks.push(
         await page.evaluate(() => {
@@ -267,14 +313,16 @@ async function runViewport(browser, vp) {
     check(label, `${vp.label} ${v.slug}: illustrative/fictional label missing`);
     check(heroChecks.every(Boolean), `${vp.label} ${v.slug}: a gallery hero image failed to load`);
     if (SHOT_DIR) await page.screenshot({ path: path.join(SHOT_DIR, `${vp.label}-${v.slug}.png`), fullPage: false });
+    await page.waitForTimeout(400);
   }
 
   // 3. Forced image failure -> graceful fallback + still labelled (Bandra view 3)
+  console.log(`[E2E] [${vp.label}] 3. Forced image failure fallback...`);
   const failCtxPage = await ctx.newPage();
   await failCtxPage.route('**/*bandra-3.webp*', (r) => r.abort());
   await failCtxPage.route('**/_next/image?*bandra-3.webp*', (r) => r.abort());
   await failCtxPage.goto(`${BASE_URL}/turfs/bandra-turf-arena-demo`, { waitUntil: 'load' });
-  await failCtxPage.locator('img[alt*="thumbnail 3"]').click();
+  await failCtxPage.locator('button:has(img[alt*="thumbnail 3"])').click();
   await failCtxPage.waitForTimeout(1500);
   const fb = await failCtxPage.evaluate(() => {
     const hero = document.querySelector('img[alt*="illustrative"], img[alt*="venue photo"]');
@@ -289,6 +337,7 @@ async function runViewport(browser, vp) {
   await failCtxPage.close();
 
   // 4. Missing + invalid + tampered hold recovery (honest, no fabricated booking)
+  console.log(`[E2E] [${vp.label}] 4. Missing/invalid hold recovery...`);
   res.recovery = {};
   for (const [key, query] of [['missing', ''], ['invalidDemoHold', '?holdId=demo-hold'], ['tampered', '?holdId=gt_bk.eyJ2IjoxfQ.deadbeef']]) {
     const p = await ctx.newPage();
@@ -309,6 +358,7 @@ async function runViewport(browser, vp) {
   }
 
   // 5. /bookings is auth-protected: anonymous users must be redirected to /login (server-side authz)
+  console.log(`[E2E] [${vp.label}] 5. Protected /bookings route...`);
   await page.goto(`${BASE_URL}/bookings`, { waitUntil: 'load' });
   const bookingsUrl = new URL(page.url());
   res.protectedBookingsRoute = {
@@ -318,7 +368,7 @@ async function runViewport(browser, vp) {
   check(res.protectedBookingsRoute.redirectedToLogin && !res.protectedBookingsRoute.showsBookingData, `${vp.label} /bookings is not protected for anonymous users`);
 
   // 6. Slot -> hold -> (release -> retry) -> simulated payment -> confirmation, per venue
-  res.bookings = [];
+  console.log(`[E2E] [${vp.label}] 6. Booking through confirmation...`);
   for (const v of VENUES) {
     res.bookings.push(await bookThroughConfirmation(page, v, vp.slotIndex, { releaseRetry: Boolean(v.releaseRetry) }));
   }
@@ -346,8 +396,13 @@ async function main() {
   try {
     browser = await chromium.launch({ channel: 'chrome', headless: true });
     evidence.browser = `Chrome ${browser.version()}`;
+    console.log(`[E2E] Chrome launched (${evidence.browser})`);
+    console.log('[E2E] Running Desktop (1440x900) suite...');
     evidence.viewports.desktop = await runViewport(browser, { label: 'desktop-1440x900', width: 1440, height: 900, slotIndex: 0 });
+    console.log('[E2E] Desktop suite finished.');
+    console.log('[E2E] Running Mobile (390x844) suite...');
     evidence.viewports.mobile = await runViewport(browser, { label: 'mobile-390x844', width: 390, height: 844, slotIndex: 1 });
+    console.log('[E2E] Mobile suite finished.');
   } finally {
     if (browser) await browser.close();
     killGroup(server);

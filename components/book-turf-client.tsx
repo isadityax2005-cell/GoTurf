@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Turf, Court } from '@/types/database';
-import { getTurfPhotoUrl, getIllustrativeSportFallback } from '@/lib/utils/turf-photo';
+import { getTurfPhotoUrl, getIllustrativeSportFallback, VENUE_PHOTO_UNAVAILABLE_PATH } from '@/lib/utils/turf-photo';
 import { getActiveBookingsForCourt } from '@/lib/data/bookings';
 import {
   generateCourtSlots,
@@ -473,8 +473,8 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
               <Image
                 src={
                   bannerImgFailed
-                    ? getIllustrativeSportFallback(selectedCourt?.sport || 'cricket')
-                    : getTurfPhotoUrl(turf.photos?.[0], selectedCourt?.sport || 'cricket')
+                    ? (turf.is_demo ? getIllustrativeSportFallback(selectedCourt?.sport || 'cricket') : VENUE_PHOTO_UNAVAILABLE_PATH)
+                    : getTurfPhotoUrl(turf.photos?.[0], selectedCourt?.sport || 'cricket', turf.is_demo)
                 }
                 alt={turf.name}
                 fill
@@ -490,7 +490,9 @@ export default function BookTurfClient({ turf, initialCourtId }: BookTurfClientP
                   📍 {turf.region?.locality}, Mumbai
                 </span>
                 <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2 py-0.5 rounded-full border border-[#03594d]">
-                  {turf.is_demo ? '🎨 Demo • Illustrative' : '★ Verified Venue'}
+                  {turf.is_demo
+                    ? (turf.slug === 'bandra-turf-arena-demo' ? '🤖 Demo • AI Image' : '🎨 Demo • Illustrative')
+                    : 'Registered Arena'}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#03594d] tracking-tight uppercase">

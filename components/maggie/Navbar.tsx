@@ -8,9 +8,10 @@ import { createClient } from '@/lib/supabase/client';
 export default function MaggieNavbar() {
   const router = useRouter();
   const [user, setUser] = useState<{ email?: string; name?: string; role?: string } | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     async function loadUserProfile() {
       try {
         const { data: authData } = await supabase.auth.getUser();
@@ -64,9 +65,10 @@ export default function MaggieNavbar() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const handleSignOut = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
     router.push('/');

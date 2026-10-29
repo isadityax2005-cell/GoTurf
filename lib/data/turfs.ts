@@ -417,9 +417,17 @@ export function getTurfBySlug(slug: string): Turf | null {
   return pending || null;
 }
 
-export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
-  // When running in isolated demo mode, skip live database queries
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.GOTURF_DEMO_ONLY === 'true') {
+export function getDemoTurfs(): Turf[] {
+  return DEMO_TURFS.filter((t) => t.status === 'approved');
+}
+
+export async function fetchLiveApprovedTurfs(mode?: 'live' | 'demo'): Promise<Turf[]> {
+  // When running in isolated demo mode or explicit demo request, return the curated demo venues
+  if (
+    mode === 'demo' ||
+    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
+    process.env.GOTURF_DEMO_ONLY === 'true'
+  ) {
     return DEMO_TURFS.filter((t) => t.status === 'approved');
   }
 
@@ -427,17 +435,24 @@ export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
     const { getServiceRoleClient } = await import('@/lib/supabase');
     const supabaseAdmin = getServiceRoleClient();
 
+    // Query strictly genuine owner-submitted and approved venues (excluding demo records)
     const { data: dbTurfsData, error: tErr } = await supabaseAdmin
       .from('turfs')
       .select('*')
       .eq('status', 'approved')
+      .eq('is_demo', false)
       .order('created_at', { ascending: false });
 
     const dbTurfs = dbTurfsData as unknown as Turf[] | null;
 
     if (tErr) {
-      console.warn('fetchLiveApprovedTurfs Supabase error, falling back:', tErr);
-      return DEMO_TURFS.filter((t) => t.status === 'approved');
+      console.warn('fetchLiveApprovedTurfs Supabase error:', tErr);
+      return [];
+    }
+
+    if (!dbTurfs || dbTurfs.length === 0) {
+      // Genuine catalogue has zero real owner listings yet
+      return [];
     }
 
     const [{ data: regionsData }, { data: courtsData }, { data: photosData }] = await Promise.all([
@@ -452,7 +467,7 @@ export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
 
     const regionMap = new Map<string, Region>(regions.map((r) => [r.id, r]));
 
-    const enrichedDbTurfs: Turf[] = (dbTurfs || []).map((t) => {
+    const enrichedDbTurfs: Turf[] = dbTurfs.map((t) => {
       const region: Region = regionMap.get(t.region_id) || {
         id: t.region_id,
         locality: 'Mumbai',
@@ -485,17 +500,10 @@ export async function fetchLiveApprovedTurfs(): Promise<Turf[]> {
       };
     });
 
-    if (enrichedDbTurfs.length > 0) {
-      const dbIds = new Set(enrichedDbTurfs.map((t) => t.id));
-      const dbSlugs = new Set(enrichedDbTurfs.map((t) => t.slug));
-      const fallbackDemos = DEMO_TURFS.filter((d) => !dbIds.has(d.id) && !dbSlugs.has(d.slug));
-      return [...enrichedDbTurfs, ...fallbackDemos];
-    }
-
-    return DEMO_TURFS.filter((t) => t.status === 'approved');
+    return enrichedDbTurfs;
   } catch (err) {
     console.error('fetchLiveApprovedTurfs exception:', err);
-    return DEMO_TURFS.filter((t) => t.status === 'approved');
+    return [];
   }
 }
 
