@@ -184,6 +184,13 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       return;
     }
 
+    if (!turf.is_demo) {
+      setPaymentError(
+        'Online checkout for live arenas is temporarily unavailable while banking gateway configuration is being finalized by the platform operator. Please explore our interactive demo arenas.'
+      );
+      return;
+    }
+
     setIsPaying(true);
     setPaymentError(null);
 
@@ -336,7 +343,7 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
       {/* Main Container */}
       <div className="max-w-2xl w-full mx-auto px-6 py-8 flex-1">
         {/* Explicit Demo / Simulated Checkout Banner */}
-        {(simulatedCheckout || turf.is_demo) && (
+        {turf.is_demo ? (
           <div
             data-testid="simulated-checkout-banner"
             className="mb-6 p-3.5 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-maggie-sm"
@@ -348,6 +355,19 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
             <span className="text-[11px] font-semibold text-[#03594d]/80">
               Test order &amp; signed webhook simulation only
             </span>
+          </div>
+        ) : (
+          <div
+            data-testid="live-gateway-notice-banner"
+            className="mb-6 p-4 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-[#03594d] flex flex-col gap-1.5 text-xs shadow-maggie-sm"
+          >
+            <div className="flex items-center gap-2 font-black uppercase tracking-wider">
+              <span className="px-2 py-0.5 rounded bg-[#03594d] text-[#82eda6] text-[10px]">OPERATOR NOTICE</span>
+              <span>Online Payment Setup in Progress</span>
+            </div>
+            <p className="text-[11px] font-semibold text-[#03594d]/85 leading-relaxed">
+              Online slot reservations for live Mumbai arenas are temporarily paused while our banking gateway integration is being finalized by the platform operator. Explore our interactive demo arenas to experience simulated booking.
+            </p>
           </div>
         )}
 
@@ -757,15 +777,21 @@ export default function CheckoutClient({ turf, courtId: propCourtId, slotId: pro
                 <div className="space-y-3 pt-2">
                   <button
                     type="button"
-                    disabled={isPaying || isExpired}
+                    disabled={isPaying || isExpired || !turf.is_demo}
                     onClick={handleInitiatePayment}
-                    className="w-full py-4 rounded-full bg-[#03594d] text-[#82eda6] font-black text-sm uppercase tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] hover:-translate-y-0.5 disabled:opacity-50 shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className={`w-full py-4 rounded-full font-black text-sm uppercase tracking-wider border-2 border-[#03594d] shadow-maggie transition-all flex items-center justify-center gap-2 ${
+                      !turf.is_demo
+                        ? 'bg-amber-100 text-[#03594d]/70 border-[#03594d]/40 cursor-not-allowed opacity-90'
+                        : 'bg-[#03594d] text-[#82eda6] hover:bg-[#02463c] hover:-translate-y-0.5 cursor-pointer shadow-xl disabled:opacity-50'
+                    }`}
                   >
                     {isPaying ? (
                       <>
                         <span className="inline-block h-4 w-4 border-2 border-[#82eda6] border-t-transparent rounded-full animate-spin" />
                         <span>Verifying &amp; Locking Slot...</span>
                       </>
+                    ) : !turf.is_demo ? (
+                      <span>Online Payments Unavailable &bull; Gateway Setup in Progress</span>
                     ) : (
                       <>
                         <span>

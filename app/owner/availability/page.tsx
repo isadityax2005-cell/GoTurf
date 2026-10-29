@@ -89,6 +89,13 @@ export default function AvailabilityManagementPage() {
     setModalSlot(null);
   };
 
+  const handleUnblock = (slotId: string, slotTime: string) => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === slotId ? { ...s, status: 'available' } : s))
+    );
+    setStatusNote(`🔓 Unblocked slot ${slotTime}. Slot is now available for player reservations.`);
+  };
+
   return (
     <main className="min-h-screen bg-[#82eda6] text-[#03594d] flex flex-col justify-between selection:bg-[#ffff94] selection:text-[#03594d]">
       {/* Top Navbar */}
@@ -195,8 +202,15 @@ export default function AvailabilityManagementPage() {
                     )}
 
                     {isBlocked && (
-                      <div className="text-[10px] font-black uppercase text-[#03594d] flex items-center justify-between">
-                        <span>🔒 Offline Block</span>
+                      <div className="text-[10px] font-black uppercase text-[#03594d] flex items-center justify-between gap-1">
+                        <span>🔒 Blocked</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnblock(slot.id, slot.startTimeIST)}
+                          className="px-2 py-0.5 rounded bg-white hover:bg-rose-100 text-rose-800 border border-rose-500 text-[10px] font-black uppercase transition-colors cursor-pointer"
+                        >
+                          Unblock
+                        </button>
                       </div>
                     )}
 

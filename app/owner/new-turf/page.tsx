@@ -13,6 +13,7 @@ export default function NewTurfRegistrationPage() {
   const [isDone, setIsDone] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('owner');
   const [submittedTurf, setSubmittedTurf] = useState<{ id: string; name: string; slug: string; status: string; owner_id: string } | null>(null);
 
   useEffect(() => {
@@ -22,6 +23,14 @@ export default function NewTurfRegistrationPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUser({ id: user.id, email: user.email });
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle<{ role: string }>();
+          if (profile?.role) {
+            setCurrentUserRole(profile.role);
+          }
         }
       } catch (err) {
         console.warn('Could not read user in new-turf page:', err);
@@ -184,17 +193,32 @@ export default function NewTurfRegistrationPage() {
           </div>
 
           <div className="flex flex-col gap-3">
+            {currentUserRole === 'admin' ? (
+              <Link
+                href="/admin"
+                className="w-full py-3.5 px-4 rounded-full bg-[#03594d] text-[#82eda6] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all text-center"
+              >
+                ⚡ Review & Approve in Admin Suite &rarr;
+              </Link>
+            ) : (
+              <Link
+                href="/owner"
+                className="w-full py-3.5 px-4 rounded-full bg-[#03594d] text-[#82eda6] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all text-center"
+              >
+                Track Status in Owner Portal &rarr;
+              </Link>
+            )}
             <Link
-              href="/admin"
-              className="w-full py-3.5 px-4 rounded-full bg-[#03594d] text-[#82eda6] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie hover:bg-[#02463c] transition-all text-center"
-            >
-              ⚡ Review & Approve in Admin Suite &rarr;
-            </Link>
-            <Link
-              href="/owner"
+              href="/owner/new-turf"
+              onClick={() => {
+                setIsDone(false);
+                setName('');
+                setAddress('');
+                setPhotoUrls([]);
+              }}
               className="w-full py-3.5 px-4 rounded-full bg-white hover:bg-[#ffff94] text-[#03594d] font-black uppercase text-xs tracking-wider border-2 border-[#03594d] shadow-maggie-sm transition-all text-center"
             >
-              Back to Owner Dashboard
+              + Register Another Arena
             </Link>
           </div>
         </div>
