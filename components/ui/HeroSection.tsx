@@ -4,7 +4,6 @@ import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { gsap } from '@/lib/gsap';
 import GlassIcon from './GlassIcon';
-import { sportsList } from './InteractiveSportsFilter';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);

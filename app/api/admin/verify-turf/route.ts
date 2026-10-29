@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getRequestIdentity } from '@/lib/auth/authorization';
 import { getServiceRoleClient } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
+    const identity = await getRequestIdentity();
+    if (!identity) return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
+    if (identity.role !== 'admin') return NextResponse.json({ success: false, error: 'Admin access required.' }, { status: 403 });
+
     const { turfId, status, rejectionReason } = await request.json();
 
     if (!turfId || !['approved', 'rejected', 'suspended'].includes(status)) {
@@ -18,7 +23,8 @@ export async function POST(request: Request) {
     // Let's check turf_status enum: ('draft', 'pending', 'approved', 'suspended')
     const finalDbStatus = status === 'rejected' ? 'suspended' : status;
 
-    const { data: updatedTurf, error: updateError } = await (supabaseAdmin.from('turfs') as any)
+    const { data: updatedTurf, error: updateError } = await supabaseAdmin
+      .from('turfs')
       .update({
         status: finalDbStatus,
         updated_at: new Date().toISOString(),
@@ -36,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Insert verification audit log
-    await (supabaseAdmin.from('audit_log') as any).insert({
+    await supabaseAdmin.from('audit_log').insert({
       action: `turf.${finalDbStatus}`,
       entity_type: 'turf',
       entity_id: turfId,
@@ -53,8 +59,9 @@ export async function POST(request: Request) {
       turf: updatedTurf,
       message: `Turf "${updatedTurf.name}" has been ${finalDbStatus === 'approved' ? 'approved and made live' : 'rejected'}.`,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Verify turf handler error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Failed to verify turf';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

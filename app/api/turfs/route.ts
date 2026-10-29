@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getServiceRoleClient } from '@/lib/supabase';
 import { DEMO_TURFS } from '@/lib/data/turfs';
-import type { Turf } from '@/types/database';
+import type { Turf, Region, Court, TurfPhoto } from '@/types/database';
 
 export async function GET() {
+  if (
+    process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
+    process.env.GOTURF_DEMO_ONLY === 'true'
+  ) {
+    return NextResponse.json({ success: true, turfs: DEMO_TURFS });
+  }
+
   try {
     const supabaseAdmin = getServiceRoleClient();
 
     // 1. Fetch all approved turfs from Supabase
-    const { data: dbTurfs, error: tErr } = await (supabaseAdmin.from('turfs') as any)
+    const { data: dbTurfsData, error: tErr } = await supabaseAdmin
+      .from('turfs')
       .select('*')
       .eq('status', 'approved')
       .order('created_at', { ascending: false });
@@ -18,16 +26,22 @@ export async function GET() {
       return NextResponse.json({ success: true, turfs: DEMO_TURFS });
     }
 
+    const dbTurfs = (dbTurfsData || []) as Turf[];
+
     // 2. Fetch regions, courts, photos
-    const [{ data: regions }, { data: courts }, { data: photos }] = await Promise.all([
-      (supabaseAdmin.from('regions') as any).select('*'),
-      (supabaseAdmin.from('courts') as any).select('*'),
-      (supabaseAdmin.from('turf_photos') as any).select('*'),
+    const [{ data: regionsData }, { data: courtsData }, { data: photosData }] = await Promise.all([
+      supabaseAdmin.from('regions').select('*'),
+      supabaseAdmin.from('courts').select('*'),
+      supabaseAdmin.from('turf_photos').select('*'),
     ]);
 
-    const regionMap = new Map((regions || []).map((r: any) => [r.id, r]));
+    const regions = (regionsData || []) as Region[];
+    const courts = (courtsData || []) as Court[];
+    const photos = (photosData || []) as TurfPhoto[];
 
-    const enrichedDbTurfs: Turf[] = (dbTurfs || []).map((t: any) => {
+    const regionMap = new Map<string, Region>(regions.map((r) => [r.id, r]));
+
+    const enrichedDbTurfs: Turf[] = dbTurfs.map((t) => {
       const region = regionMap.get(t.region_id) || {
         id: t.region_id,
         locality: 'Mumbai',
@@ -36,8 +50,8 @@ export async function GET() {
         created_at: t.created_at,
       };
 
-      const turfCourts = (courts || []).filter((c: any) => c.turf_id === t.id);
-      const turfPhotos = (photos || []).filter((p: any) => p.turf_id === t.id);
+      const turfCourts = courts.filter((c) => c.turf_id === t.id);
+      const turfPhotos = photos.filter((p) => p.turf_id === t.id);
 
       return {
         ...t,
@@ -71,7 +85,7 @@ export async function GET() {
       success: true,
       turfs: combinedTurfs,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('API /turfs handler error:', err);
     return NextResponse.json({ success: true, turfs: DEMO_TURFS });
   }

@@ -230,7 +230,7 @@ export default function OwnerDashboardPage() {
                             {isApproved ? '✓ Live & Bookable' : '⏳ Pending Review'}
                           </span>
                           <span className="text-[10px] text-[#03594d]/70 font-bold">
-                            📍 {turf.region?.locality || (turf as any).locality || 'Mumbai'}
+                            📍 {turf.region?.locality || (turf as Turf & { locality?: string }).locality || 'Mumbai'}
                           </span>
                         </div>
                         <h3 className="font-black text-lg uppercase tracking-tight">{turf.name}</h3>

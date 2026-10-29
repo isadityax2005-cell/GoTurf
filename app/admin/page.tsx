@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface TurfItem {
   id: string;
@@ -67,7 +68,34 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    fetchOverview();
+    let isCancelled = false;
+    async function initOverview() {
+      try {
+        const res = await fetch('/api/admin/overview');
+        const data = await res.json();
+        if (isCancelled) return;
+        if (data.success) {
+          setStats(data.stats);
+          setPendingTurfs(data.pendingTurfs || []);
+          setApprovedTurfs(data.approvedTurfs || []);
+          setOwners(data.owners || []);
+        } else {
+          setNotification(`⚠️ Failed to load admin metrics: ${data.error}`);
+        }
+      } catch {
+        if (!isCancelled) {
+          setNotification('Network error loading admin data.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    initOverview();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   const handleVerify = async (turfId: string, action: 'approve' | 'reject') => {
@@ -314,12 +342,15 @@ export default function AdminDashboardPage() {
                               href={photoUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="block aspect-video rounded-xl overflow-hidden border-2 border-[#03594d] bg-gray-100 hover:scale-105 transition-transform"
+                              className="relative block aspect-video rounded-xl overflow-hidden border-2 border-[#03594d] bg-gray-100 hover:scale-105 transition-transform"
                             >
-                              <img
+                              <Image
                                 src={photoUrl}
                                 alt={`Venue proof ${idx + 1}`}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="200px"
+                                unoptimized
+                                className="object-cover"
                               />
                             </a>
                           ))}

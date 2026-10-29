@@ -28,11 +28,10 @@ import {
   verifyRazorpaySignature,
   resetPaymentsForTesting,
   PLATFORM_FEE_PAISE,
-  DEFAULT_WEBHOOK_SECRET,
   type RazorpayWebhookPayload,
 } from '../lib/engine/payment-service';
 
-import type { Booking } from '../types/database';
+const TEST_WEBHOOK_SECRET = 'goturf-unit-test-webhook-secret';
 
 async function runPhase7Tests() {
   console.log('\n======================================================================');
@@ -52,9 +51,11 @@ async function runPhase7Tests() {
   // --------------------------------------------------------------------------
   console.log('--- TEST 1: Token Advance Hold Creation ---');
   const slotPricePaise = 180000; // ₹1,800 slot
-  const now = new Date('2026-10-15T10:00:00Z');
-  const matchStart = '2026-10-15T12:30:00Z'; // 18:00 IST
-  const matchEnd = '2026-10-15T13:30:00Z';   // 19:00 IST
+  const now = new Date();
+  const matchBase = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  matchBase.setUTCMinutes(30, 0, 0);
+  const matchStart = matchBase.toISOString();
+  const matchEnd = new Date(matchBase.getTime() + 60 * 60 * 1000).toISOString();
 
   const holdA = await createTemporaryHold({
     courtId,
@@ -133,8 +134,8 @@ async function runPhase7Tests() {
   };
 
   const rawBody = JSON.stringify(webhookPayload);
-  const signature = signWebhookPayload(rawBody, DEFAULT_WEBHOOK_SECRET);
-  const isSignatureValid = verifyRazorpaySignature(rawBody, signature, DEFAULT_WEBHOOK_SECRET);
+  const signature = signWebhookPayload(rawBody, TEST_WEBHOOK_SECRET);
+  const isSignatureValid = verifyRazorpaySignature(rawBody, signature, TEST_WEBHOOK_SECRET);
   console.assert(isSignatureValid, 'HMAC signature verification failed');
 
   const webhookResult = await processPaymentWebhook(webhookPayload, `evt_${Date.now()}`);
@@ -180,8 +181,8 @@ async function runPhase7Tests() {
   const holdB = await createTemporaryHold({
     courtId,
     playerId: playerB,
-    startAtUTC: '2026-10-15T13:30:00Z',
-    endAtUTC: '2026-10-15T14:30:00Z',
+    startAtUTC: new Date(matchBase.getTime() + 60 * 60 * 1000).toISOString(),
+    endAtUTC: new Date(matchBase.getTime() + 2 * 60 * 60 * 1000).toISOString(),
     pricePaise: 200000, // ₹2,000 slot
     paymentMode: 'token_advance',
     now,
@@ -207,8 +208,8 @@ async function runPhase7Tests() {
   const holdC = await createTemporaryHold({
     courtId,
     playerId: playerC,
-    startAtUTC: '2026-10-15T14:30:00Z',
-    endAtUTC: '2026-10-15T15:30:00Z',
+    startAtUTC: new Date(matchBase.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+    endAtUTC: new Date(matchBase.getTime() + 3 * 60 * 60 * 1000).toISOString(),
     pricePaise: 150000, // ₹1,500 slot
     paymentMode: 'full_online',
     now,

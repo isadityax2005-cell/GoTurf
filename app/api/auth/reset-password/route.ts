@@ -1,59 +1,29 @@
 import { NextResponse } from 'next/server';
-import { getServiceRoleClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const { email, newPassword } = await request.json();
-
-    if (!email || !newPassword) {
-      return NextResponse.json(
-        { success: false, error: 'Email and new password are required' },
-        { status: 400 }
-      );
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { success: false, error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
+    const body = await request.json();
+    const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      return NextResponse.json({ success: false, error: 'Password must be 8–128 characters.' }, { status: 400 });
     }
 
-    const supabaseAdmin = getServiceRoleClient();
-    const cleanEmail = email.trim().toLowerCase();
-
-    // Find user by email
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listError) {
-      return NextResponse.json({ success: false, error: listError.message }, { status: 500 });
+    // Update only the account represented by the verified session; no email lookup
+    // or service-role password reset is exposed by this endpoint.
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      return NextResponse.json({ success: false, error: 'Unable to update password.' }, { status: 400 });
     }
 
-    const targetUser = users.users.find((u) => u.email?.toLowerCase() === cleanEmail);
-    if (!targetUser) {
-      return NextResponse.json(
-        { success: false, error: `No user found with email ${cleanEmail}` },
-        { status: 404 }
-      );
-    }
-
-    // Update password
-    const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      targetUser.id,
-      {
-        password: newPassword,
-        email_confirm: true,
-      }
-    );
-
-    if (updateError) {
-      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `Password successfully updated for ${cleanEmail}! You can now sign in with your new password.`,
-    });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, message: 'Password updated.' });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Unable to update password.' }, { status: 500 });
   }
 }

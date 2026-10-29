@@ -25,10 +25,12 @@ async function runPhase5RaceTest() {
   resetBookingsForTesting(); // clean test slate
 
   const courtId = '40000000-0000-0000-0000-000000000001'; // Bandra Court 1
-  const startAtUTC = '2026-10-15T18:00:00Z';
-  const endAtUTC = '2026-10-15T19:00:00Z';
+  const testNow = new Date();
+  const matchBase = new Date(testNow.getTime() + 48 * 60 * 60 * 1000);
+  matchBase.setUTCMinutes(0, 0, 0);
+  const startAtUTC = matchBase.toISOString();
+  const endAtUTC = new Date(matchBase.getTime() + 60 * 60 * 1000).toISOString();
   const pricePaise = 180000;
-  const testNow = new Date('2026-10-15T10:00:00Z');
 
   console.log('--- TEST 1: The 50-Request Concurrency Collision Test ---');
   console.log('Firing 50 simultaneous parallel asynchronous hold requests for the exact same slot...');
@@ -108,7 +110,7 @@ async function runPhase5RaceTest() {
 
   console.log('\n--- TEST 3: Explicit Hold Release ---');
   const activeHold = attemptAfterExpiry.booking!;
-  const released = releaseHold(activeHold.id);
+  const released = releaseHold(activeHold.id, elevenMinutesLater);
   console.assert(released === true, 'Failed to release hold');
   console.log('  ✓ Player clicked "Release Slot & Exit"; hold was freed immediately');
 
@@ -129,8 +131,8 @@ async function runPhase5RaceTest() {
   const confirmedBooking = rebookAttempt.booking!;
   confirmedBooking.status = 'confirmed';
 
-  // Cancel booking (match is on 15 Oct, testNow is earlier -> > 24h away)
-  const cancelResult = cancelBooking(confirmedBooking.id, 'Injured player');
+  // Cancel booking (> 24h before match)
+  const cancelResult = cancelBooking(confirmedBooking.id, 'Injured player', elevenMinutesLater);
   console.assert(cancelResult.success && cancelResult.refundEligible, 'Cancellation policy calculation failed');
   console.log(`  ✓ [PASS] Booking cancelled > 24h before match -> ${cancelResult.message}`);
 

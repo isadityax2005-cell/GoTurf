@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { gsap, ScrollTrigger } from '@/lib/gsap';
+import { gsap } from '@/lib/gsap';
 
 export default function MaggieEvents() {
   const sectionRef = useRef<HTMLElement>(null);

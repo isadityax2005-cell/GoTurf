@@ -1,33 +1,123 @@
 // ============================================================================
-// GoTurf Payment Service Engine (Phase 6)
+// GoTurf Payment Service Engine (Phase 6 + Stateless Order Token Hardening)
 // Handles:
 // 1. Server-Authoritative Order Creation (Price locked on server).
-// 2. Cryptographic HMAC-SHA256 Webhook Signature Verification.
-// 3. Webhook Idempotency (raw_event_id deduplication).
-// 4. Post-Expiry Late Payment Arbitration (Auto-claim vs Auto-refund).
-// 5. Automated Refunds & Cancellation Policy Enforcement.
+// 2. Stateless HMAC-SHA256 Signed Order Tokens for serverless reliability.
+// 3. Cryptographic HMAC-SHA256 Webhook Signature Verification.
+// 4. Webhook Idempotency (raw_event_id deduplication).
+// 5. Post-Expiry Late Payment Arbitration (Auto-claim vs Auto-refund).
+// 6. Automated Refunds & Cancellation Policy Enforcement.
 // ============================================================================
 
 import crypto from 'crypto';
 import type { Payment, Refund, Booking } from '@/types/database';
 import {
   getAllBookingsForTesting,
-  createTemporaryHold,
   expireStaleHolds,
+  inspectBookingToken,
+  getBookingById,
+  hydrateBookingFromSnapshot,
+  encodeSignedBookingToken,
+  getBookingTokenSecret,
 } from '@/lib/engine/booking-service';
 
 export const PLATFORM_FEE_PAISE = 4500; // ₹45 in paise (₹38.14 base + ₹6.86 GST @ 18%)
+const ORDER_TOKEN_PREFIX = 'gt_ord';
 
 // In-memory payment ledger
 let paymentsList: Payment[] = [];
 let refundsList: Refund[] = [];
 const processedWebhookEventIds = new Set<string>();
 
-// Mock/Default Webhook secret (Can be overridden by env variable RAZORPAY_WEBHOOK_SECRET)
-export const DEFAULT_WEBHOOK_SECRET = 'goturf_live_webhook_secret_mumbai_2026';
+// A missing production secret is a configuration error, never a known fallback.
+export function getWebhookSecret(): string | null {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
+  return secret ? secret : null;
+}
 
-export function getWebhookSecret(): string {
-  return process.env.RAZORPAY_WEBHOOK_SECRET || DEFAULT_WEBHOOK_SECRET;
+/**
+ * The unsigned test payment simulator is restricted to non-production development/demo use.
+ * Production environments strictly reject simulator bypasses.
+ */
+export function isTestPaymentSimulatorEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+    return false;
+  }
+  if (process.env.GOTURF_ENABLE_TEST_PAYMENT_SIMULATOR === 'false') {
+    return false;
+  }
+  return (
+    process.env.GOTURF_ENABLE_TEST_PAYMENT_SIMULATOR === 'true' ||
+    process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+  );
+}
+
+interface SignedOrderPayload {
+  v: 1;
+  orderNonce: string;
+  payment: Payment;
+  bookingSnapshot: Booking;
+}
+
+function encodeSignedOrderToken(payload: Omit<SignedOrderPayload, 'v'>): string {
+  const fullPayload: SignedOrderPayload = {
+    v: 1,
+    ...payload,
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(fullPayload), 'utf8').toString('base64url');
+  const signingInput = `${ORDER_TOKEN_PREFIX}.${payloadB64}`;
+  const signature = crypto
+    .createHmac('sha256', getBookingTokenSecret())
+    .update(signingInput)
+    .digest('hex');
+  return `${signingInput}.${signature}`;
+}
+
+export function decodeAndVerifyOrderToken(orderToken: string): {
+  valid: boolean;
+  error?: string;
+  payload?: SignedOrderPayload;
+} {
+  if (!orderToken || typeof orderToken !== 'string' || !orderToken.startsWith(`${ORDER_TOKEN_PREFIX}.`)) {
+    return { valid: false, error: 'Invalid order token format.' };
+  }
+
+  const parts = orderToken.split('.');
+  if (parts.length !== 3 || !parts[1] || !parts[2]) {
+    return { valid: false, error: 'Malformed order token.' };
+  }
+
+  const [, payloadB64, receivedSig] = parts;
+  const signingInput = `${ORDER_TOKEN_PREFIX}.${payloadB64}`;
+  const expectedSig = crypto
+    .createHmac('sha256', getBookingTokenSecret())
+    .update(signingInput)
+    .digest('hex');
+
+  try {
+    const a = Buffer.from(expectedSig, 'utf8');
+    const b = Buffer.from(receivedSig, 'utf8');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return { valid: false, error: 'Order token signature verification failed.' };
+    }
+
+    const parsed = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as Partial<SignedOrderPayload>;
+    if (
+      parsed.v !== 1 ||
+      !parsed.payment ||
+      !parsed.bookingSnapshot ||
+      typeof parsed.payment.amount_paise !== 'number'
+    ) {
+      return { valid: false, error: 'Order token payload is invalid.' };
+    }
+
+    return {
+      valid: true,
+      payload: parsed as SignedOrderPayload,
+    };
+  } catch {
+    return { valid: false, error: 'Failed to decode order token.' };
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -44,33 +134,45 @@ export interface CreateOrderResult {
   order?: {
     orderId: string;
     bookingId: string;
+    holdToken: string;
     amountPaise: number;
     currency: string;
     courtPricePaise: number;
     platformFeePaise: number;
-    advancePaise?: number;
-    balancePaise?: number;
-    paymentMode?: string;
+    advancePaise: number;
+    balancePaise: number;
+    paymentMode: string;
     keyId: string;
+    simulatedCheckout: boolean;
   };
   error?: string;
-  code?: 'HOLD_NOT_FOUND' | 'HOLD_EXPIRED' | 'ALREADY_PAID';
+  code?: 'HOLD_NOT_FOUND' | 'HOLD_EXPIRED' | 'ALREADY_PAID' | 'INVALID_TOKEN' | 'TAMPERED_TOKEN';
 }
 
 export async function createPaymentOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
-  const bookings = getAllBookingsForTesting();
   expireStaleHolds();
 
-  const booking = bookings.find((b) => b.id === params.holdId);
-  if (!booking) {
-    return { success: false, error: 'Booking hold not found', code: 'HOLD_NOT_FOUND' };
+  const inspected = inspectBookingToken(params.holdId);
+  if (!inspected.valid || !inspected.booking) {
+    return {
+      success: false,
+      error: inspected.error || 'Booking hold not found or invalid token',
+      code:
+        inspected.code === 'TAMPERED_TOKEN'
+          ? 'TAMPERED_TOKEN'
+          : inspected.code === 'INVALID_TOKEN'
+          ? 'INVALID_TOKEN'
+          : 'HOLD_NOT_FOUND',
+    };
   }
+
+  const booking = inspected.booking;
 
   if (booking.status === 'confirmed') {
     return { success: false, error: 'Booking is already confirmed and paid', code: 'ALREADY_PAID' };
   }
 
-  if (booking.status === 'expired') {
+  if (booking.status === 'expired' || booking.status === 'cancelled') {
     return { success: false, error: 'Slot hold has expired. Please pick the slot again.', code: 'HOLD_EXPIRED' };
   }
 
@@ -85,7 +187,10 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
       booking.advance_amount_paise = booking.price_paise;
       booking.balance_amount_paise = 0;
     } else {
-      booking.advance_amount_paise = booking.advance_amount_paise || defaultAdvance;
+      booking.advance_amount_paise =
+        booking.advance_amount_paise && booking.advance_amount_paise < booking.price_paise
+          ? booking.advance_amount_paise
+          : defaultAdvance;
       booking.balance_amount_paise = Math.max(0, booking.price_paise - booking.advance_amount_paise);
     }
   }
@@ -104,18 +209,21 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
     ? Math.max(0, courtPricePaise - advancePaise)
     : 0;
 
+  booking.advance_amount_paise = advancePaise;
+  booking.balance_amount_paise = balancePaise;
+
   // Amount charged online right now: Advance/Full + ₹45 Platform Fee
   const totalAmountPaise = advancePaise + PLATFORM_FEE_PAISE;
 
-
-  const orderId = `order_rzp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = new Date().toISOString();
+  const paymentId = `pay_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const orderNonce = `order_rzp_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
   const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_GoTurfMumbaiKey';
 
-  const now = new Date().toISOString();
-  const payment: Payment = {
-    id: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  const draftPayment: Payment = {
+    id: paymentId,
     booking_id: booking.id,
-    provider_order_id: orderId,
+    provider_order_id: orderNonce,
     provider_payment_id: null,
     status: 'created',
     amount_paise: totalAmountPaise,
@@ -124,22 +232,39 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
     updated_at: now,
   };
 
+  const orderId = encodeSignedOrderToken({
+    orderNonce,
+    payment: draftPayment,
+    bookingSnapshot: { ...booking },
+  });
+
+  const payment: Payment = {
+    ...draftPayment,
+    provider_order_id: orderId,
+  };
+
   paymentsList.push(payment);
+
+  const updatedHoldToken = encodeSignedBookingToken(booking);
 
   return {
     success: true,
     order: {
       orderId,
       bookingId: booking.id,
+      holdToken: updatedHoldToken,
       amountPaise: totalAmountPaise,
       currency: 'INR',
       courtPricePaise,
       platformFeePaise: PLATFORM_FEE_PAISE,
+      advancePaise,
+      balancePaise,
+      paymentMode: booking.payment_mode || 'token_advance',
       keyId,
+      simulatedCheckout: isTestPaymentSimulatorEnabled(),
     },
   };
 }
-
 
 // ----------------------------------------------------------------------------
 // 2. Cryptographic HMAC-SHA256 Signature Verification
@@ -147,9 +272,9 @@ export async function createPaymentOrder(params: CreateOrderParams): Promise<Cre
 export function verifyRazorpaySignature(
   payloadString: string,
   receivedSignature: string,
-  secret = getWebhookSecret()
+  secret: string
 ): boolean {
-  if (!receivedSignature || !payloadString) return false;
+  if (!secret || !receivedSignature || !payloadString) return false;
 
   try {
     const expectedSignature = crypto
@@ -171,7 +296,7 @@ export function verifyRazorpaySignature(
 }
 
 // Helper to generate a valid signature (useful for automated testing and test simulator)
-export function signWebhookPayload(payloadString: string, secret = getWebhookSecret()): string {
+export function signWebhookPayload(payloadString: string, secret: string): string {
   return crypto.createHmac('sha256', secret).update(payloadString).digest('hex');
 }
 
@@ -214,6 +339,8 @@ export interface WebhookProcessResult {
   duplicate?: boolean;
   outcome: 'confirmed' | 'late_claimed' | 'auto_refunded' | 'ignored' | 'error';
   bookingId?: string;
+  bookingToken?: string;
+  booking?: Booking;
   paymentId?: string;
   refundId?: string;
   message: string;
@@ -257,8 +384,32 @@ export async function processPaymentWebhook(
     };
   }
 
-  // Locate the internal payment record
-  const payment = paymentsList.find((p) => p.provider_order_id === orderId);
+  // If orderId is a signed stateless order token, verify its cryptographic signature
+  let decodedOrderPayload: SignedOrderPayload | undefined;
+  if (orderId.startsWith(`${ORDER_TOKEN_PREFIX}.`)) {
+    const verifiedOrder = decodeAndVerifyOrderToken(orderId);
+    if (!verifiedOrder.valid || !verifiedOrder.payload) {
+      return {
+        success: false,
+        outcome: 'error',
+        message: verifiedOrder.error || 'Invalid or tampered order token',
+      };
+    }
+    decodedOrderPayload = verifiedOrder.payload;
+  }
+
+  // Locate or hydrate the internal payment record
+  let payment = paymentsList.find((p) => p.provider_order_id === orderId);
+  if (!payment && decodedOrderPayload) {
+    const hydratedBooking = hydrateBookingFromSnapshot(decodedOrderPayload.bookingSnapshot);
+    payment = {
+      ...decodedOrderPayload.payment,
+      booking_id: hydratedBooking.id,
+      provider_order_id: orderId,
+    };
+    paymentsList.push(payment);
+  }
+
   if (!payment) {
     return {
       success: false,
@@ -268,7 +419,11 @@ export async function processPaymentWebhook(
   }
 
   const bookings = getAllBookingsForTesting();
-  const booking = bookings.find((b) => b.id === payment.booking_id);
+  let booking = bookings.find((b) => b.id === payment!.booking_id) || getBookingById(payment.booking_id) || undefined;
+  if (!booking && decodedOrderPayload) {
+    booking = hydrateBookingFromSnapshot(decodedOrderPayload.bookingSnapshot);
+  }
+
   if (!booking) {
     return {
       success: false,
@@ -293,11 +448,14 @@ export async function processPaymentWebhook(
     payment.updated_at = now.toISOString();
 
     processedWebhookEventIds.add(eventId);
+    const confirmedToken = encodeSignedBookingToken(booking);
 
     return {
       success: true,
       outcome: 'confirmed',
       bookingId: booking.id,
+      bookingToken: confirmedToken,
+      booking,
       paymentId: payment.id,
       message: 'Payment verified and booking confirmed successfully',
     };
@@ -310,8 +468,8 @@ export async function processPaymentWebhook(
     const endMs = new Date(booking.end_at).getTime();
 
     const isSlotTaken = bookings.some((b) => {
-      if (b.id === booking.id) return false;
-      if (b.court_id !== booking.court_id) return false;
+      if (b.id === booking!.id) return false;
+      if (b.court_id !== booking!.court_id) return false;
       if (b.status !== 'confirmed' && b.status !== 'held') return false;
 
       const bStart = new Date(b.start_at).getTime();
@@ -332,11 +490,14 @@ export async function processPaymentWebhook(
       payment.updated_at = now.toISOString();
 
       processedWebhookEventIds.add(eventId);
+      const confirmedToken = encodeSignedBookingToken(booking);
 
       return {
         success: true,
         outcome: 'late_claimed',
         bookingId: booking.id,
+        bookingToken: confirmedToken,
+        booking,
         paymentId: payment.id,
         message: 'Late payment accepted: slot was still free and successfully claimed',
       };
@@ -368,6 +529,8 @@ export async function processPaymentWebhook(
         success: true,
         outcome: 'auto_refunded',
         bookingId: booking.id,
+        bookingToken: encodeSignedBookingToken(booking),
+        booking,
         paymentId: payment.id,
         refundId: refund.id,
         message: 'Post-expiry collision detected: Slot was taken; 100% automated refund processed',
@@ -382,6 +545,9 @@ export async function processPaymentWebhook(
       success: true,
       duplicate: true,
       outcome: 'confirmed',
+      bookingId: booking.id,
+      bookingToken: encodeSignedBookingToken(booking),
+      booking,
       message: 'Booking was already confirmed',
     };
   }
@@ -406,10 +572,10 @@ export function executeBookingRefund(params: ExecuteRefundParams): {
   success: boolean;
   refundEligible: boolean;
   refund?: Refund;
+  bookingToken?: string;
   message: string;
 } {
-  const bookings = getAllBookingsForTesting();
-  const booking = bookings.find((b) => b.id === params.bookingId);
+  const booking = getBookingById(params.bookingId);
 
   if (!booking) {
     return { success: false, refundEligible: false, message: 'Booking not found' };
@@ -422,7 +588,23 @@ export function executeBookingRefund(params: ExecuteRefundParams): {
   // Eligible if > 24 hours before match, or if admin explicitly overrides
   const refundEligible = hoursRemaining >= 24 || Boolean(params.adminOverride);
 
-  const payment = paymentsList.find((p) => p.booking_id === booking.id && p.status === 'captured');
+  let payment = paymentsList.find((p) => p.booking_id === booking.id && p.status === 'captured');
+  if (!payment && booking.status === 'confirmed') {
+    // Stateless fallback when refund runs on a fresh serverless instance
+    const paidAmount = (booking.advance_amount_paise ?? booking.price_paise) + PLATFORM_FEE_PAISE;
+    payment = {
+      id: `pay_stateless_${Date.now()}`,
+      booking_id: booking.id,
+      provider_order_id: `ord_stateless_${Date.now()}`,
+      provider_payment_id: `pay_rzp_stateless_${Date.now()}`,
+      status: 'captured',
+      amount_paise: paidAmount,
+      raw_event_id: null,
+      created_at: booking.created_at,
+      updated_at: now.toISOString(),
+    };
+    paymentsList.push(payment);
+  }
 
   if (!refundEligible) {
     booking.status = 'cancelled';
@@ -432,6 +614,7 @@ export function executeBookingRefund(params: ExecuteRefundParams): {
     return {
       success: true,
       refundEligible: false,
+      bookingToken: encodeSignedBookingToken(booking),
       message: 'Booking cancelled. Inside 24h window, no refund per venue policy.',
     };
   }
@@ -461,6 +644,7 @@ export function executeBookingRefund(params: ExecuteRefundParams): {
     success: true,
     refundEligible: true,
     refund: refundRecord,
+    bookingToken: encodeSignedBookingToken(booking),
     message: 'Booking cancelled and 100% refund initiated to source payment method.',
   };
 }

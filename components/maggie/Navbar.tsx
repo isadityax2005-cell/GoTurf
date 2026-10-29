@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client';
 export default function MaggieNavbar() {
   const router = useRouter();
   const [user, setUser] = useState<{ email?: string; name?: string; role?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
@@ -17,12 +16,13 @@ export default function MaggieNavbar() {
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
           // Fetch authoritative role from public.profiles
-          const { data: profile } = await (supabase.from('profiles') as any)
+          const { data: profile } = await supabase
+            .from('profiles')
             .select('name, role, phone')
             .eq('id', authData.user.id)
-            .maybeSingle();
+            .maybeSingle<{ name?: string; role?: string; phone?: string | null }>();
 
-          const role = profile?.role || authData.user.user_metadata?.role || 'player';
+          const role = profile?.role || 'player';
           const name = profile?.name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User';
 
           setUser({
@@ -35,8 +35,6 @@ export default function MaggieNavbar() {
         }
       } catch (err) {
         console.error('Navbar user load error:', err);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -44,12 +42,13 @@ export default function MaggieNavbar() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const { data: profile } = await (supabase.from('profiles') as any)
+        const { data: profile } = await supabase
+          .from('profiles')
           .select('name, role, phone')
           .eq('id', session.user.id)
-          .maybeSingle();
+          .maybeSingle<{ name?: string; role?: string; phone?: string | null }>();
 
-        const role = profile?.role || session.user.user_metadata?.role || 'player';
+        const role = profile?.role || 'player';
         const name = profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
 
         setUser({

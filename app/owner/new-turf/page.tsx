@@ -49,8 +49,8 @@ export default function NewTurfRegistrationPage() {
     'Drinking Water',
     'Changing Rooms',
   ]);
-  const [lat, setLat] = useState('19.0596');
-  const [lng, setLng] = useState('72.8295');
+  const [lat] = useState('19.0596');
+  const [lng] = useState('72.8295');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
   const toggleFacility = (fac: string) => {
@@ -89,7 +89,7 @@ export default function NewTurfRegistrationPage() {
           setNotification(`⚠️ Failed to upload ${file.name}: ${data.error || 'Server error'}`);
         }
       }
-    } catch (err) {
+    } catch {
       setNotification('Network error while uploading photo. Please try again.');
     } finally {
       setIsUploadingPhoto(false);
@@ -451,10 +451,13 @@ export default function NewTurfRegistrationPage() {
                           key={url}
                           className="relative rounded-2xl border-2 border-[#03594d] overflow-hidden group shadow-maggie-sm aspect-video bg-[#03594d]/5"
                         >
-                          <img
+                          <Image
                             src={url}
                             alt={`Venue preview ${idx + 1}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="200px"
+                            unoptimized
+                            className="object-cover"
                           />
                           <button
                             type="button"

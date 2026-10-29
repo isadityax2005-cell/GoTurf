@@ -66,8 +66,7 @@ export async function updateSession(request: NextRequest) {
         .single();
 
       const userRole =
-        ((profile as unknown as { role?: UserRole } | null)?.role as UserRole) ||
-        ((user.user_metadata?.role as UserRole) || 'player');
+        ((profile as unknown as { role?: UserRole } | null)?.role as UserRole) || 'player';
 
       if (isAdminRoute && userRole !== 'admin') {
         const url = request.nextUrl.clone();

@@ -1,8 +1,16 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Turf } from '@/types/database';
 import SpotlightCard from '@/components/ui/SpotlightCard';
-import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import {
+  getTurfPhotoUrl,
+  getIllustrativeSportFallback,
+  isAiGeneratedPhotoUrl,
+  isIllustrativePhotoUrl,
+} from '@/lib/utils/turf-photo';
 
 interface TurfCardProps {
   turf: Turf;
@@ -16,9 +24,18 @@ const sportImages: Record<string, string> = {
 };
 
 export default function TurfCard({ turf }: TurfCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   // Extract distinct sports available at this turf
   const sports = Array.from(new Set(turf.courts?.map((c) => c.sport) || []));
-  const photoUrl = getTurfPhotoUrl(turf.photos?.[0], sports[0] || 'cricket');
+  const primarySport = sports[0] || 'cricket';
+  const fallbackUrl = getIllustrativeSportFallback(primarySport);
+  const resolvedUrl = getTurfPhotoUrl(turf.photos?.[0], primarySport);
+  const photoUrl = imageFailed ? fallbackUrl : resolvedUrl;
+  const isStockPhoto =
+    photoUrl.includes('images.unsplash.com') ||
+    Boolean(turf.photos?.[0]?.caption?.toLowerCase().includes('stock photo'));
+  const isIllustrative = turf.is_demo || imageFailed || isIllustrativePhotoUrl(photoUrl);
   const photosCount = turf.photos?.length || 0;
 
   return (
@@ -30,27 +47,40 @@ export default function TurfCard({ turf }: TurfCardProps) {
       <div className="relative w-full h-48 sm:h-52 overflow-hidden border-b-2 border-[#03594d] bg-[#03594d]/10">
         <Image
           src={photoUrl}
-          alt={turf.name}
+          alt={
+            isAiGeneratedPhotoUrl(photoUrl) && !imageFailed
+              ? `${turf.name} — AI-generated illustrative demo image`
+              : isIllustrative
+                ? `${turf.name} — illustrative court preview`
+                : turf.name
+          }
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={() => setImageFailed(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
         {/* Badges over Image */}
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
           <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
             📍 {turf.region?.locality || 'Mumbai'}
           </span>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#82eda6] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
-            ★ 4.9 Verified
+            {isStockPhoto
+              ? '📷 Stock photo, illustrative'
+              : isAiGeneratedPhotoUrl(photoUrl) && !imageFailed
+                ? '🤖 Demo • AI-generated image'
+                : turf.is_demo
+                  ? '🎨 Demo • Illustrative'
+                  : '★ Verified Venue'}
           </span>
         </div>
 
         {/* Photos Count Pill */}
         {photosCount > 1 && (
           <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black border border-white/20">
-            📸 {photosCount} Photos
+            📸 {photosCount} {isIllustrative ? 'Previews' : 'Photos'}
           </div>
         )}
       </div>
@@ -84,6 +114,7 @@ export default function TurfCard({ turf }: TurfCardProps) {
                       src={img}
                       alt={sport}
                       fill
+                      sizes="36px"
                       className="object-cover"
                     />
                   </div>

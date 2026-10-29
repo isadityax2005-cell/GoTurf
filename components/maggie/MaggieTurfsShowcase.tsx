@@ -4,9 +4,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DEMO_TURFS } from '@/lib/data/turfs';
-import { gsap, ScrollTrigger } from '@/lib/gsap';
+import { gsap } from '@/lib/gsap';
 import SpotlightCard from '@/components/ui/SpotlightCard';
-import { getTurfPhotoUrl } from '@/lib/utils/turf-photo';
+import {
+  getTurfPhotoUrl,
+  getIllustrativeSportFallback,
+  isIllustrativePhotoUrl,
+} from '@/lib/utils/turf-photo';
 
 import type { Turf } from '@/types/database';
 
@@ -24,6 +28,7 @@ const sportIcons: Record<string, { src: string; name: string }> = {
 export default function MaggieTurfsShowcase({ selectedSport }: Props) {
   const showcaseRef = useRef<HTMLElement>(null);
   const [turfs, setTurfs] = useState<Turf[]>(DEMO_TURFS);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function loadLiveTurfs() {
@@ -76,7 +81,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div>
             <div className="inline-flex items-center gap-2 bg-[#ffff94] text-[#03594d] px-4 py-1 rounded-full border-2 border-[#03594d] shadow-maggie-sm text-xs font-black uppercase tracking-wider mb-3 select-none">
-              <span>📍 verified mumbai grounds</span>
+              <span>📍 mumbai grounds &amp; demo previews</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#03594d]">
               Live Arenas Near You
@@ -99,6 +104,12 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
           {filtered.map((turf) => {
             const courts = turf.courts || [];
             const sports = Array.from(new Set(courts.map((c) => c.sport)));
+            const primarySport = sports[0] || 'cricket';
+            const fallbackUrl = getIllustrativeSportFallback(primarySport);
+            const resolvedUrl = getTurfPhotoUrl(turf.photos?.[0], primarySport);
+            const photoUrl = failedImages[turf.id] ? fallbackUrl : resolvedUrl;
+            const isIllustrative =
+              turf.is_demo || Boolean(failedImages[turf.id]) || isIllustrativePhotoUrl(photoUrl);
 
             return (
               <div key={turf.id} className="turf-showcase-card h-full">
@@ -109,26 +120,29 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
                   {/* Photo Header */}
                   <div className="relative w-full h-44 sm:h-48 overflow-hidden border-b-2 border-[#03594d] bg-[#03594d]/10">
                     <Image
-                      src={getTurfPhotoUrl(turf.photos?.[0], sports[0] || 'cricket')}
-                      alt={turf.name}
+                      src={photoUrl}
+                      alt={isIllustrative ? `${turf.name} — illustrative court preview` : turf.name}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
+                      onError={() =>
+                        setFailedImages((prev) => ({ ...prev, [turf.id]: true }))
+                      }
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
-                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
                       <span className="text-[10px] font-black uppercase tracking-wider bg-[#ffff94] text-[#03594d] px-3 py-1 rounded-full border border-[#03594d] shadow-maggie-sm">
                         📍 {turf.region?.locality}
                       </span>
                       <span className="text-[10px] font-black bg-[#82eda6] text-[#03594d] px-2.5 py-0.5 rounded-full border border-[#03594d] shadow-maggie-sm">
-                        ★ 4.9 Verified
+                        {turf.is_demo ? '🎨 Demo • Illustrative' : '★ Verified Venue'}
                       </span>
                     </div>
 
                     {(turf.photos?.length || 0) > 1 && (
                       <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black border border-white/20">
-                        📸 {turf.photos?.length} Photos
+                        📸 {turf.photos?.length} {isIllustrative ? 'Previews' : 'Photos'}
                       </div>
                     )}
                   </div>
@@ -151,6 +165,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
                                   src={icon.src}
                                   alt={icon.name}
                                   fill
+                                  sizes="48px"
                                   className="object-cover"
                                 />
                               </div>
@@ -191,7 +206,7 @@ export default function MaggieTurfsShowcase({ selectedSport }: Props) {
                       <div className="mt-4 pt-3 border-t-2 border-[#03594d]/10 space-y-1.5 text-[11px] font-bold text-[#03594d]">
                         <div className="flex items-center gap-1.5">
                           <span>⚡</span>
-                          <span>Continuous 2H & 3H+ slots open</span>
+                          <span>Continuous 2H &amp; 3H+ slots open</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span>🎟️</span>

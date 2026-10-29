@@ -9,7 +9,6 @@
 
 import {
   getApprovedTurfs,
-  getTurfBySlug,
   createPendingTurf,
   approveTurf,
   getPendingTurfs,
@@ -19,7 +18,7 @@ function runPhase3Tests() {
   console.log('--- 1. Testing Public Discovery Query (Approved Only Gate) ---');
 
   const initialApproved = getApprovedTurfs();
-  console.assert(initialApproved.length === 3, `Expected 3 initial approved turfs, got ${initialApproved.length}`);
+  console.assert(initialApproved.length === 5, `Expected 5 initial approved turfs, got ${initialApproved.length}`);
   console.assert(
     initialApproved.every((t) => t.status === 'approved'),
     'Test Failed: Non-approved turf leaked into public search!'

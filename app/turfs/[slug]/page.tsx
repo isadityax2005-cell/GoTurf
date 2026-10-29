@@ -68,7 +68,7 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
               <span>All Mumbai Turfs</span>
             </Link>
             <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#ffff94] text-[#03594d] border border-[#03594d] shadow-maggie-sm">
-              Verified Venue
+              {turf.is_demo ? 'Fictional Demo Venue' : 'Verified Venue'}
             </span>
           </div>
         </div>
@@ -110,6 +110,7 @@ async function TurfDetailContent({ params }: TurfDetailPageProps) {
             turfName={turf.name}
             photos={turf.photos}
             primarySport={turf.courts?.[0]?.sport || 'cricket'}
+            isDemo={turf.is_demo}
           />
 
           {/* Courts & Play Areas */}

@@ -43,6 +43,7 @@ export default function TurfsDiscoveryClient({ initialTurfs }: Props) {
     { label: 'Bandra West', value: 'Bandra West' },
     { label: 'Powai', value: 'Powai' },
     { label: 'Andheri East', value: 'Andheri East' },
+    { label: 'Kurla West', value: 'Kurla West' },
     { label: 'Juhu', value: 'Juhu' },
     { label: 'Borivali West', value: 'Borivali West' },
   ];

@@ -70,7 +70,9 @@ export default function BookingsPage() {
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled', canCancel: false } : b))
     );
-    setNotification('✅ Booking cancelled. Full refund of ₹1,800 initiated per 24h turf cancellation policy.');
+    setNotification(
+      `Sample booking ${bookingId} marked cancelled in this preview only. No real cancellation, refund or payment action was performed.`
+    );
   };
 
   return (
@@ -95,6 +97,14 @@ export default function BookingsPage() {
           </p>
         </div>
 
+        <div
+          data-testid="sample-bookings-banner"
+          className="mb-6 p-4 rounded-2xl bg-white border-2 border-[#03594d] text-xs text-[#03594d] font-bold shadow-maggie-sm"
+        >
+          <span className="px-2 py-0.5 mr-2 rounded bg-[#03594d] text-[#ffff94] text-[10px] font-black uppercase">Sample data</span>
+          These are illustrative sample reservations, not connected to your account. A real booking&apos;s Match Pass is shown on its checkout confirmation screen.
+        </div>
+
         {notification && (
           <div className="mb-6 p-4 rounded-2xl bg-[#ffff94] border-2 border-[#03594d] text-xs text-[#03594d] font-bold flex justify-between items-center shadow-maggie-sm">
             <span>{notification}</span>
@@ -112,7 +122,7 @@ export default function BookingsPage() {
             >
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono font-black text-[#03594d]/60">{booking.id}</span>
+                  <span className="text-[10px] font-mono font-black text-[#03594d]/60">SAMPLE {booking.id}</span>
                   <span
                     className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border border-[#03594d] ${
                       booking.status === 'confirmed'
@@ -179,7 +189,7 @@ export default function BookingsPage() {
 
       {/* Footer */}
       <footer className="border-t-2 border-[#03594d] px-6 py-4 text-center text-xs text-[#03594d]/75 font-bold bg-[#82eda6]">
-        GoTurf &bull; Live Match Confirmations
+        GoTurf &bull; Sample Booking Preview
       </footer>
     </main>
   );
